@@ -77,6 +77,28 @@ impl Lexer {
 
         Token::Number(number.parse::<f64>().unwrap())
     }
+    fn read_string(&mut self) -> Token {
+       let mut value = String::new();
+
+       while let Some(ch) = self.scanner.advance() {
+           if ch == '"' {
+               return Token::String(value);
+           }
+
+           value.push(ch);
+       }
+
+       Token::EOF
+    }
+
+    fn match_char(&mut self, expected: char) -> bool {
+       if self.scanner.peek() == Some(expected) {
+            self.scanner.advance();
+            true
+       } else {
+            false
+       }
+    }
 
     pub fn next_token(&mut self) -> Token {
         // Lewati whitespace
@@ -104,7 +126,35 @@ impl Lexer {
             '/' => Token::Slash,
             '%' => Token::Percent,
 
-            '=' => Token::Equal,
+            '=' => {
+                if self.scanner.peek() == Some('=') {
+                   self.scanner.advance();
+                   Token::EqualEqual
+                } else {
+                   Token::Equal
+                }
+            }
+            '!' => {
+                if self.match_char('=') {
+                   Token::BangEqual
+                } else {
+                   Token::Bang
+                }
+            }
+            '<' => {
+                if self.match_char('=') {
+                   Token::LessEqual
+                } else {
+                   Token::Less
+                }
+            }
+            '>' => {
+               if self.match_char('=') {
+                   Token::GreaterEqual
+               } else {
+                   Token::Greater
+               }
+            }
 
             ';' => Token::Semicolon,
             ',' => Token::Comma,
@@ -119,6 +169,7 @@ impl Lexer {
 
             '[' => Token::LeftBracket,
             ']' => Token::RightBracket,
+            '"' => self.read_string(),
 
             '0'..='9' => self.read_number(ch),
 
