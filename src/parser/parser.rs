@@ -54,6 +54,7 @@ impl Parser {
         Token::Keyword(Keyword::Print) => self.parse_print_statement(),
         Token::Keyword(Keyword::If) => self.parse_if_statement(),
         Token::Keyword(Keyword::While) => self.parse_while_statement(),
+        Token::Keyword(Keyword::For) => self.parse_for_statement(),
         Token::Keyword(Keyword::Break) => self.parse_break_statement(),
         Token::Keyword(Keyword::Continue) => self.parse_continue_statement(),
         Token::Keyword(Keyword::Fn) => self.parse_function_statement(),
@@ -162,75 +163,81 @@ impl Parser {
 
        Some(Stmt::Return { value })
     }
-    fn parse_let_statement(&mut self) -> Option<Stmt> {
+    fn parse_let_core(&mut self) -> Option<Stmt> {
        // lewati "let"
        self.advance();
 
        let name = match self.current_token() {
-           Token::Identifier(name) => name.clone(),
-           _ => return None,
+          Token::Identifier(name) => name.clone(),
+          _ => return None,
        };
 
        // lewati identifier
        self.advance();
 
-       // sekarang harus '='
        match self.current_token() {
-           Token::Equal => {}
-           _ => return None,
+          Token::Equal => {}
+          _ => return None,
        }
 
        // lewati '='
        self.advance();
 
-       // baca expression
        let value = self.parse_expression(Precedence::Lowest)?;
 
-       // sekarang harus ';'
-       match self.current_token() {
-           Token::Semicolon => {}
-           _ => return None,
-       }
-
-       // lewati ';'
-       self.advance();
-
-      Some(Stmt::Let {
+       Some(Stmt::Let {
           name,
           value,
-      })
+       })
     }
-    fn parse_assign_statement(&mut self) -> Option<Stmt> {
-       let name = match self.current_token() {
-           Token::Identifier(name) => name.clone(),
-           _ => return None,
-       };
-
-       // lewati identifier
-       self.advance();
-
-       match self.current_token() {
-           Token::Equal => {}
-           _ => return None,
-       }
-
-       // lewati '='
-       self.advance();
-
-       let value = self.parse_expression(Precedence::Lowest)?;
+    fn parse_let_statement(&mut self) -> Option<Stmt> {
+       let stmt = self.parse_let_core()?;
 
        match self.current_token() {
           Token::Semicolon => {}
-           _ => return None,
+          _ => return None,
+       }
+
+       self.advance();
+
+       Some(stmt)
+    }
+    fn parse_assign_core(&mut self) -> Option<Stmt> {
+       let name = match self.current_token() {
+          Token::Identifier(name) => name.clone(),
+          _ => return None,
+       };
+
+       // lewati identifier
+       self.advance();
+
+       match self.current_token() {
+          Token::Equal => {}
+          _ => return None,
+       }
+
+       // lewati '='
+       self.advance();
+
+       let value = self.parse_expression(Precedence::Lowest)?;
+
+       Some(Stmt::Assign {
+          name,
+          value,
+       })
+    }
+    fn parse_assign_statement(&mut self) -> Option<Stmt> {
+       let stmt = self.parse_assign_core()?;
+
+       match self.current_token() {
+          Token::Semicolon => {}
+          _ => return None,
        }
 
        // lewati ';'
        self.advance();
 
-       Some(Stmt::Assign {
-           name,
-           value,
-       })
+       Some(stmt)
     }
 
     fn parse_expression_statement(&mut self) -> Option<Stmt> {
@@ -422,6 +429,92 @@ impl Parser {
           body,
        })
     }
+    fn parse_for_statement(&mut self) -> Option<Stmt> {
+       // lewati 'for'
+       self.advance();
+
+       // harus '('
+       match self.current_token() {
+          Token::LeftParen => {}
+          _ => return None,
+       }
+
+       self.advance();
+
+       // initializer
+       let init = match self.current_token() {
+          Token::Keyword(Keyword::Let) => self.parse_let_core()?,
+          Token::Identifier(_) => self.parse_assign_core()?,
+          _ => return None,
+       };
+
+       // harus ';'
+       match self.current_token() {
+          Token::Semicolon => {}
+          _ => return None,
+       }
+
+       self.advance();
+
+       // condition
+       let condition = self.parse_expression(Precedence::Lowest)?;
+
+       // harus ';'
+       match self.current_token() {
+          Token::Semicolon => {}
+          _ => return None,
+       }
+
+       self.advance();
+
+       // update
+       let update = match self.current_token() {
+          Token::Identifier(_) => self.parse_assign_core()?,
+          _ => return None,
+       };
+
+       // harus ')'
+       match self.current_token() {
+          Token::RightParen => {}
+          _ => return None,
+       }
+
+       self.advance();
+
+       // harus '{'
+       match self.current_token() {
+          Token::LeftBrace => {}
+          _ => return None,
+       }
+
+       self.advance();
+
+       let mut body = Vec::new();
+
+       while !matches!(self.current_token(), Token::RightBrace | Token::EOF) {
+          if let Some(stmt) = self.parse_statement() {
+              body.push(stmt);
+          } else {
+              return None;
+          }
+       }
+
+       // harus '}'
+       match self.current_token() {
+          Token::RightBrace => {}
+          _ => return None,
+       }
+
+       self.advance();
+
+       Some(Stmt::For {
+          init: Box::new(init),
+          condition,
+          update: Box::new(update),
+          body,
+       })
+    }
+
     fn parse_break_statement(&mut self) -> Option<Stmt> {
        self.advance();
 

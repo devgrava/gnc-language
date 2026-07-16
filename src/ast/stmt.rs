@@ -39,4 +39,10 @@ pub enum Stmt {
     Expression {
         expression: Expr,
     },
+    For {
+      init: Box<Stmt>,
+      condition: Expr,
+      update: Box<Stmt>,
+      body: Vec<Stmt>,
+    },
 }

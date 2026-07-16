@@ -139,6 +139,56 @@ impl Interpreter {
 
                Ok(())
               }
+              
+              Stmt::For {
+                init,
+                condition,
+                update,
+                body,
+              } => {
+                // jalankan initializer
+                self.execute(init)?;
+
+                loop {
+                   let cond = self.evaluate(condition);
+
+                   let is_true = match cond {
+                      Value::Boolean(v) => v,
+                      Value::Number(n) => n != 0.0,
+                      Value::Null => false,
+                      Value::String(ref s) => !s.is_empty(),
+                      Value::Array(ref a) => !a.borrow().is_empty(),
+                      Value::Function { .. } => true,
+                   };
+
+                   if !is_true {
+                      break;
+                   }
+
+                   for stmt in body {
+                      match self.execute(stmt) {
+                          Ok(()) => {}
+
+                          Err(RuntimeSignal::Break) => {
+                            return Ok(());
+                          }
+
+                          Err(RuntimeSignal::Continue) => {
+                            break;
+                          }
+
+                          Err(RuntimeSignal::Return(value)) => {
+                            return Err(RuntimeSignal::Return(value));
+                          }
+                      }
+                   }
+
+                   // jalankan update
+                   self.execute(update)?;
+                 }
+
+                 Ok(())
+              }
 
                   
               Stmt::Break => {
