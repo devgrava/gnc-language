@@ -1,0 +1,7 @@
+let text = "Hello GNC";
+
+print(contains(text, "GNC"));
+
+print(contains(text, "Rust"));
+
+print(contains(text, "Hello"));

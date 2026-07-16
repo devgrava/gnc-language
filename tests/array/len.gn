@@ -1,0 +1,3 @@
+let angka = [10, 20, 30];
+
+print(len(angka));

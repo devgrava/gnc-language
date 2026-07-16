@@ -13,4 +13,5 @@ pub enum Keyword {
     False,
     Null,
     Import,
+    Print,
 }

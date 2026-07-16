@@ -1,0 +1,8 @@
+let arr = [10, 20, 30];
+
+print(pop(arr));
+
+print(len(arr));
+
+print(arr[0]);
+print(arr[1]);

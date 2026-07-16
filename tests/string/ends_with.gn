@@ -1,0 +1,5 @@
+let text = "Hello GNC";
+
+print(ends_with(text, "GNC"));
+print(ends_with(text, "Hello"));
+print(ends_with(text, "Rust"));

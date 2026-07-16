@@ -1,0 +1,7 @@
+let arr = [10, 20, 30];
+
+print(len(arr));
+
+clear(arr);
+
+print(len(arr));

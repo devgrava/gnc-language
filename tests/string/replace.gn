@@ -1,0 +1,7 @@
+let text = "Hello Rust";
+
+print(replace(text, "Rust", "GNC"));
+
+print(replace("abcabc", "a", "x"));
+
+print(replace("2026-07-16", "-", "/"));

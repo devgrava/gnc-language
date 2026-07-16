@@ -1,0 +1,11 @@
+let arr = [];
+
+print(is_empty(arr));
+
+push(arr, 10);
+
+print(is_empty(arr));
+
+clear(arr);
+
+print(is_empty(arr));

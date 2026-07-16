@@ -43,6 +43,8 @@ impl Lexer {
             "false" => Token::Keyword(Keyword::False),
             "null" => Token::Keyword(Keyword::Null),
             "import" => Token::Keyword(Keyword::Import),
+            "print" => Token::Keyword(Keyword::Print),
+
             _ => Token::Identifier(text),
         }
     }
@@ -82,10 +84,25 @@ impl Lexer {
 
        while let Some(ch) = self.scanner.advance() {
            if ch == '"' {
-               return Token::String(value);
+              return Token::String(value);
            }
 
+           if ch == '\\' {
+              if let Some(next) = self.scanner.advance() {
+                  match next {
+                    'n' => value.push('\n'),
+                    't' => value.push('\t'),
+                    '"' => value.push('"'),
+                    '\\' => value.push('\\'),
+                    _ => {
+                      value.push('\\');
+                      value.push(next);
+                   }
+               }
+           }
+         } else {
            value.push(ch);
+         }
        }
 
        Token::EOF
@@ -98,6 +115,23 @@ impl Lexer {
        } else {
             false
        }
+    }
+    fn skip_line_comment(&mut self) {
+        while let Some(ch) = self.scanner.peek() {
+             if ch == '\n' {
+                 break;
+             }
+
+             self.scanner.advance();
+        }
+    }
+    fn skip_block_comment(&mut self) {
+        while let Some(ch) = self.scanner.advance() {
+           if ch == '*' && self.scanner.peek() == Some('/') {
+               self.scanner.advance();
+               break;
+           }
+        }
     }
 
     pub fn next_token(&mut self) -> Token {
@@ -123,7 +157,19 @@ impl Lexer {
             '+' => Token::Plus,
             '-' => Token::Minus,
             '*' => Token::Star,
-            '/' => Token::Slash,
+            '/' => {
+              if self.match_char('/') {
+                self.skip_line_comment();
+                return self.next_token();
+              }
+
+              if self.match_char('*') {
+                self.skip_block_comment();
+                return self.next_token();
+              }
+
+              Token::Slash
+            }
             '%' => Token::Percent,
 
             '=' => {
@@ -155,6 +201,21 @@ impl Lexer {
                    Token::Greater
                }
             }
+            '&' => {
+               if self.match_char('&') {
+                  Token::AndAnd
+               } else {
+                  Token::EOF
+               }
+             }
+
+            '|' => {
+                if self.match_char('|') {
+                     Token::OrOr
+                } else {
+                     Token::EOF
+                }
+            }
 
             ';' => Token::Semicolon,
             ',' => Token::Comma,
@@ -178,7 +239,7 @@ impl Lexer {
                 self.identifier_or_keyword(ident)
             }
 
-            _ => Token::EOF,
+            _ => Token::Illegal(ch),
         }
     }
 }

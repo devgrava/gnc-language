@@ -1,0 +1,7 @@
+let text = "Hello GNC";
+
+print(lower(text));
+
+print(lower("RUST"));
+
+print(lower("GNC Language"));

@@ -2,6 +2,8 @@ use super::Keyword;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
+    Illegal(char),
+
     Keyword(Keyword),
 
     Identifier(String),
@@ -27,6 +29,8 @@ pub enum Token {
 
     Greater,
     GreaterEqual,
+    AndAnd,
+    OrOr,
 
     LeftParen,
     RightParen,

@@ -1,0 +1,7 @@
+let arr = [10, 20, 30];
+
+print(first(arr));
+
+let kosong = [];
+
+print(first(kosong));

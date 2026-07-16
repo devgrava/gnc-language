@@ -1,0 +1,3 @@
+let text = "   Hello GNC   ";
+
+print(trim(text));

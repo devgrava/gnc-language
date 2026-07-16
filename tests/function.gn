@@ -1,0 +1,5 @@
+fn kali(a, b) {
+    return a * b;
+}
+
+print(kali(6, 7));
