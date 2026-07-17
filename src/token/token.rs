@@ -13,10 +13,19 @@ pub enum Token {
     String(String),
 
     Plus,
+    PlusPlus,
+    PlusEqual,
+
     Minus,
+    MinusMinus,
+    MinusEqual,
+
     Star,
+    StarEqual,
     Slash,
+    SlashEqual,
     Percent,
+    PercentEqual,
 
     Equal,
     EqualEqual,

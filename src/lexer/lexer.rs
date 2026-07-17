@@ -154,24 +154,47 @@ impl Lexer {
         let ch = self.scanner.advance().unwrap();
 
         match ch {
-            '+' => Token::Plus,
-            '-' => Token::Minus,
-            '*' => Token::Star,
-            '/' => {
-              if self.match_char('/') {
-                self.skip_line_comment();
-                return self.next_token();
+            
+            '+' => {
+              if self.match_char('+') {
+                Token::PlusPlus
+              } else if self.match_char('=') {
+                Token::PlusEqual
+              } else {
+                Token::Plus
               }
-
-              if self.match_char('*') {
-                self.skip_block_comment();
-                return self.next_token();
-              }
-
-              Token::Slash
             }
-            '%' => Token::Percent,
-
+            '-' => {
+              if self.match_char('-') {
+                 Token::MinusMinus
+              } else if self.match_char('=') {
+                 Token::MinusEqual
+              } else {
+                 Token::Minus
+              }
+            }
+            '*' => {
+              if self.match_char('=') {
+                Token::StarEqual
+              } else {
+                Token::Star
+              }
+            }
+            '/' => {
+              if self.match_char('=') {
+                Token::SlashEqual
+              } else {
+                Token::Slash
+              }
+            }
+            '%' => {
+              if self.match_char('=') {
+                Token::PercentEqual
+              } else {
+                Token::Percent
+              }
+            }
+            
             '=' => {
                 if self.scanner.peek() == Some('=') {
                    self.scanner.advance();

@@ -36,6 +36,7 @@ fn main() {
         let is_eof = token == Token::EOF;
 
         tokens.push(token);
+       // println!("{:?}", tokens.last().unwrap());
 
         if is_eof {
             break;

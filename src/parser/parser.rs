@@ -61,10 +61,21 @@ impl Parser {
         Token::Keyword(Keyword::Return) => self.parse_return_statement(),
 
         Token::Identifier(_) => {
-          if matches!(self.peek_token(), Some(Token::Equal)) {
-             self.parse_assign_statement()
-          } else {
-             self.parse_expression_statement()
+          match self.peek_token() {
+            Some(Token::Equal)
+            | Some(Token::PlusPlus)
+            | Some(Token::MinusMinus)
+            | Some(Token::PlusEqual)
+            | Some(Token::MinusEqual)
+            | Some(Token::StarEqual)
+            | Some(Token::SlashEqual)
+            | Some(Token::PercentEqual) => {
+                self.parse_assign_statement()
+            }
+
+            _ => {
+              self.parse_expression_statement()
+            }
           }
         }
 
@@ -204,28 +215,51 @@ impl Parser {
     }
     fn parse_assign_core(&mut self) -> Option<Stmt> {
        let name = match self.current_token() {
-          Token::Identifier(name) => name.clone(),
-          _ => return None,
+           Token::Identifier(name) => name.clone(),
+           _ => return None,
        };
 
        // lewati identifier
        self.advance();
 
-       match self.current_token() {
-          Token::Equal => {}
-          _ => return None,
-       }
+       let value = match self.current_token() {
+            Token::Equal => {
+               // lewati '='
+               self.advance();
 
-       // lewati '='
-       self.advance();
+               self.parse_expression(Precedence::Lowest)?
+            }
 
-       let value = self.parse_expression(Precedence::Lowest)?;
+            Token::PlusPlus => {
+               // lewati '++'
+               self.advance();
 
-       Some(Stmt::Assign {
-          name,
-          value,
-       })
-    }
+               Expr::Binary {
+                  left: Box::new(Expr::Identifier(name.clone())),
+                  operator: "+".to_string(),
+                  right: Box::new(Expr::Number(1.0)),
+               }
+            }
+
+            Token::MinusMinus => {
+               // lewati '--'
+               self.advance();
+
+               Expr::Binary {
+                  left: Box::new(Expr::Identifier(name.clone())),
+                  operator: "-".to_string(),
+                  right: Box::new(Expr::Number(1.0)),
+               }
+            }
+
+            _ => return None,
+         };
+
+         Some(Stmt::Assign {
+            name,
+            value,
+         })
+    }   
     fn parse_assign_statement(&mut self) -> Option<Stmt> {
        let stmt = self.parse_assign_core()?;
 
