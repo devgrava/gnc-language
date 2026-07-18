@@ -332,7 +332,44 @@ impl Interpreter {
                      }
                  }
              }
-             //    
+             // start Expr::Unary
+             Expr::Unary { operator, right } => {
+                let value = self.evaluate(right);
+
+                   // start match
+                   match operator.as_str() {
+                      "+" => {
+                          match value {
+                             Value::Number(n) => Value::Number(n),
+                             _ => panic!("Unary '+' requires number"),
+                          }
+                       }
+
+                       "-" => {
+                          match value {
+                             Value::Number(n) => Value::Number(-n),
+                             _ => panic!("Unary '-' requires number"),
+                          }
+                       }
+
+                       "!" => {
+                         let result = match value {
+                             Value::Boolean(v) => !v,
+                             Value::Number(n) => n == 0.0,
+                             Value::Null => true,
+                             Value::String(ref s) => s.is_empty(),
+                             Value::Array(ref a) => a.borrow().is_empty(),
+                             Value::Function { .. } => false,
+                         };
+
+                         Value::Boolean(result)
+                    }
+                    // end match
+
+                    _ => panic!("Unknown unary operator '{}'", operator),
+                 }
+             }
+             // End Expr::Unary   
          }
            
     }

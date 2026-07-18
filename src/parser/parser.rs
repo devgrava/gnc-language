@@ -576,6 +576,30 @@ impl Parser {
   
     fn parse_primary(&mut self) -> Option<Expr> {
        match self.current_token() {
+          Token::Plus | Token::Minus | Token::Bang => {
+              let operator = match self.current_token() {
+                 Token::Plus => "+",
+                 Token::Minus => "-",
+                 Token::Bang => "!",
+                 _ => unreachable!(),
+              }
+              .to_string();
+
+              // lewati operator
+              self.advance();
+
+              let right = self.parse_primary()?;
+
+              return Some(Expr::Unary {
+                  operator,
+                  right: Box::new(right),
+              });
+          }
+
+          _ => {}
+       }
+
+       match self.current_token() {
            Token::Number(value) => {
                let expr = Expr::Number(*value);
                self.advance();

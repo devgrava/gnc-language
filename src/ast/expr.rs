@@ -15,6 +15,10 @@ pub enum Expr {
         operator: String,
         right: Box<Expr>,
     },
+    Unary {
+        operator: String,
+        right: Box<Expr>,
+    },
     Call {
        callee: Box<Expr>,
        arguments: Vec<Expr>,
