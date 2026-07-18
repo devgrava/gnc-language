@@ -1,0 +1,8 @@
+print(true == true);
+print(true != false);
+
+print("gnc" == "gnc");
+print("gnc" != "rust");
+
+print(null == null);
+print(null != null);

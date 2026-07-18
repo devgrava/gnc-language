@@ -618,7 +618,7 @@ impl Interpreter {
              
              // Start _=>{
              _ => {
-                match (left, right) {
+                match (left.clone(), right.clone()) {
                    (Value::Number(a), Value::Number(b)) => {
                        match operator.as_str() {
                           "+" => Value::Number(a + b),
@@ -640,7 +640,36 @@ impl Interpreter {
                        }
                    }
 
-                   _ => Value::Null,
+                   // Start _ => match (left, right)
+                   _ => match (left, right) {
+
+                      (Value::Boolean(a), Value::Boolean(b)) => {
+                         match operator.as_str() {
+                           "==" => Value::Boolean(a == b),
+                           "!=" => Value::Boolean(a != b),
+                           _ => Value::Null,
+                         }
+                      }
+
+                      (Value::String(a), Value::String(b)) => {
+                         match operator.as_str() {
+                            "==" => Value::Boolean(a == b),
+                            "!=" => Value::Boolean(a != b),
+                            _ => Value::Null,
+                         }
+                      }
+
+                      (Value::Null, Value::Null) => {
+                         match operator.as_str() {
+                            "==" => Value::Boolean(true),
+                            "!=" => Value::Boolean(false),
+                            _ => Value::Null,
+                         }
+                      }
+
+                      _ => Value::Null,
+                   } 
+                   // End _=> match (left, right)
                 }
             }
         }
