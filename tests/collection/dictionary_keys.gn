@@ -1,0 +1,7 @@
+let user = {
+    "name": "Didit",
+    "age": 25,
+    "country": "Indonesia"
+};
+
+print(keys(user));

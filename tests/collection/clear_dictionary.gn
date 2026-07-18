@@ -1,0 +1,13 @@
+let user = {
+    "name": "Didit",
+    "age": 25,
+    "country": "Indonesia"
+};
+
+print(len(keys(user)));
+
+clear(user);
+
+print(len(keys(user)));
+
+print(has_key(user, "name"));

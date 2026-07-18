@@ -26,7 +26,9 @@ pub enum Expr {
     Array {
         elements: Vec<Expr>,
     },
-
+    Dictionary {
+        entries: Vec<(Expr, Expr)>,
+    },
     Index {
         object: Box<Expr>,
         index: Box<Expr>,

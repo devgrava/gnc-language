@@ -1,0 +1,8 @@
+let user = {
+    "name": "Didit",
+    "age": 25
+};
+
+print(has_key(user, "name"));
+print(has_key(user, "age"));
+print(has_key(user, "country"));

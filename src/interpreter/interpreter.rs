@@ -1,6 +1,14 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use crate::builtin::{array, string};
+
+use crate::builtin::{
+    array,
+    dictionary,
+    string,
+    math,
+    io,
+    system,
+};
 
 use crate::ast::{Program, Stmt, Expr};
 use crate::runtime::{Environment, Value};
@@ -118,6 +126,7 @@ impl Interpreter {
                    Value::Null => false,
                    Value::String(ref s) => !s.is_empty(),
                    Value::Array(ref a) => !a.borrow().is_empty(),
+                   Value::Dictionary(ref d) => !d.borrow().is_empty(),
                    Value::Function { .. } => true,
                 };
 
@@ -143,6 +152,7 @@ impl Interpreter {
                          Value::Null => false,
                          Value::String(ref s) => !s.is_empty(),
                          Value::Array(ref a) => !a.borrow().is_empty(),
+                         Value::Dictionary(ref d) => !d.borrow().is_empty(),
                          Value::Function { .. } => true,
                      };
 
@@ -189,6 +199,7 @@ impl Interpreter {
                       Value::Null => false,
                       Value::String(ref s) => !s.is_empty(),
                       Value::Array(ref a) => !a.borrow().is_empty(),
+                      Value::Dictionary(ref d) => !d.borrow().is_empty(),
                       Value::Function { .. } => true,
                    };
 
@@ -405,9 +416,15 @@ impl Interpreter {
                          .cloned()
                          .unwrap_or(Value::Null)
                      }
+                     (Value::Dictionary(map), Value::String(key)) => {
+                       map.borrow()
+                         .get(&key)
+                         .cloned()
+                         .unwrap_or(Value::Null)
+                     }
 
                      _ => {
-                       panic!("Index hanya bisa digunakan pada array.");
+                       panic!("Index operator can only be used on arrays or dictionaries.");
                      }
                  }
              }
@@ -438,6 +455,7 @@ impl Interpreter {
                              Value::Null => true,
                              Value::String(ref s) => s.is_empty(),
                              Value::Array(ref a) => a.borrow().is_empty(),
+                             Value::Dictionary(ref d) => d.borrow().is_empty(),
                              Value::Function { .. } => false,
                          };
 
@@ -448,7 +466,30 @@ impl Interpreter {
                     _ => panic!("Unknown unary operator '{}'", operator),
                  }
              }
-             // End Expr::Unary   
+             // End Expr::Unary
+
+             // Start Expr::Dictionary
+             Expr::Dictionary { entries } => {
+                use std::collections::HashMap;
+                use std::rc::Rc;
+                use std::cell::RefCell;
+
+                let mut map = HashMap::new();
+
+                for (key_expr, value_expr) in entries {
+                   let key = match self.evaluate(key_expr) {
+                      Value::String(s) => s,
+                      _ => panic!("Dictionary key must be a string"),
+                };
+
+                let value = self.evaluate(value_expr);
+
+                   map.insert(key, value);
+                }
+
+                Value::Dictionary(Rc::new(RefCell::new(map)))
+             }
+             // End Expr::Dictionary   
          }
            
     }
@@ -460,7 +501,7 @@ impl Interpreter {
         match name {
            "len" => {
                if arguments.len() != 1 {
-                  panic!("len() membutuhkan 1 argumen");
+                  panic!("len() expects 1 argument");
                }
 
                let value = self.evaluate(&arguments[0]);
@@ -469,7 +510,7 @@ impl Interpreter {
            }
            "push" => {
                if arguments.len() != 2 {
-                  panic!("push() membutuhkan 2 argumen");
+                  panic!("push() expects 2 argument");
                 }
 
                 let array = self.evaluate(&arguments[0]);
@@ -479,7 +520,7 @@ impl Interpreter {
            }
            "pop" => {
                if arguments.len() != 1 {
-                  panic!("pop() membutuhkan 1 argumen");
+                  panic!("pop() expects 1 argument");
                }
 
                let array = self.evaluate(&arguments[0]);
@@ -488,7 +529,7 @@ impl Interpreter {
            }
            "insert" => {
                if arguments.len() != 3 {
-                  panic!("insert() membutuhkan 3 argumen");
+                  panic!("insert() expects 3 argument");
                }
 
                let array = self.evaluate(&arguments[0]);
@@ -499,7 +540,7 @@ impl Interpreter {
            }
            "remove" => {
               if arguments.len() != 2 {
-                panic!("remove() membutuhkan 2 argumen");
+                panic!("remove() expects 2 argument");
               }
 
               let array = self.evaluate(&arguments[0]);
@@ -509,16 +550,20 @@ impl Interpreter {
            }
            "clear" => {
               if arguments.len() != 1 {
-                 panic!("clear() membutuhkan 1 argumen");
+                panic!("clear() expects 1 argument");
               }
 
-              let array = self.evaluate(&arguments[0]);
+              let value = self.evaluate(&arguments[0]);
 
-              Some(array::clear(array))
+              match &value {
+                 Value::Array(_) => Some(array::clear(value)),
+                 Value::Dictionary(_) => Some(dictionary::clear(value)),
+                 _ => panic!("clear() expects an array or dictionary"),
+              }
            }
            "reverse" => {
               if arguments.len() != 1 {
-                 panic!("reverse() membutuhkan 1 argumen");
+                 panic!("reverse() expects 1 argument");
               }
 
               let array = self.evaluate(&arguments[0]);
@@ -527,7 +572,7 @@ impl Interpreter {
            }
            "first" => {
               if arguments.len() != 1 {
-                 panic!("first() membutuhkan 1 argumen");
+                 panic!("first() expects 1 argument");
               }
 
               let array = self.evaluate(&arguments[0]);
@@ -536,7 +581,7 @@ impl Interpreter {
            }
            "last" => {
               if arguments.len() != 1 {
-                 panic!("last() membutuhkan 1 argumen");
+                 panic!("last() expects 1 argument");
               }
 
               let array = self.evaluate(&arguments[0]);
@@ -545,7 +590,7 @@ impl Interpreter {
            }
            "is_empty" => {
               if arguments.len() != 1 {
-                 panic!("is_empty() membutuhkan 1 argumen");
+                 panic!("is_empty() expects 1 argument");
               }
 
               let array = self.evaluate(&arguments[0]);
@@ -554,7 +599,7 @@ impl Interpreter {
            }
            "trim" => {
               if arguments.len() != 1 {
-                 panic!("trim() membutuhkan 1 argumen");
+                 panic!("trim() expects 1 argument");
               }
 
               let value = self.evaluate(&arguments[0]);
@@ -563,7 +608,7 @@ impl Interpreter {
            }
            "upper" => {
               if arguments.len() != 1 {
-                 panic!("upper() membutuhkan 1 argumen");
+                 panic!("upper() expects 1 argument");
               }
 
               let value = self.evaluate(&arguments[0]);
@@ -572,7 +617,7 @@ impl Interpreter {
            }
            "lower" => {
               if arguments.len() != 1 {
-                 panic!("lower() membutuhkan 1 argumen");
+                 panic!("lower() expects 1 argument");
               }
 
               let value = self.evaluate(&arguments[0]);
@@ -581,7 +626,7 @@ impl Interpreter {
            }
            "contains" => {
              if arguments.len() != 2 {
-               panic!("contains() membutuhkan 2 argumen");
+               panic!("contains() expects 2 argument");
              }
 
              let target = self.evaluate(&arguments[0]);
@@ -590,12 +635,12 @@ impl Interpreter {
              match &target {
                 Value::Array(_) => Some(array::contains(target, value)),
                 Value::String(_) => Some(string::contains(target, value)),
-                _ => panic!("contains() hanya mendukung array atau string"),
+                _ => panic!("contains() only supports arrays or strings"),
              }
            }
            "starts_with" => {
              if arguments.len() != 2 {
-                panic!("starts_with() membutuhkan 2 argumen");
+                panic!("starts_with() expects 2 argument");
              }
 
              let text = self.evaluate(&arguments[0]);
@@ -605,7 +650,7 @@ impl Interpreter {
            }
            "ends_with" => {
              if arguments.len() != 2 {
-               panic!("ends_with() membutuhkan 2 argumen");
+               panic!("ends_with() expects 2 argument");
              }
 
              let text = self.evaluate(&arguments[0]);
@@ -615,7 +660,7 @@ impl Interpreter {
            }
            "replace" => {
              if arguments.len() != 3 {
-                panic!("replace() membutuhkan 3 argumen");
+                panic!("replace() expects 3 argument");
              }
 
              let text = self.evaluate(&arguments[0]);
@@ -626,7 +671,7 @@ impl Interpreter {
            }
            "split" => {
              if arguments.len() != 2 {
-                panic!("split() membutuhkan 2 argumen");
+                panic!("split() expects 2 argument");
              }
 
              let text = self.evaluate(&arguments[0]);
@@ -634,6 +679,46 @@ impl Interpreter {
 
              Some(string::split(text, separator))
            }
+           "keys" => {
+             if arguments.len() != 1 {
+                panic!("keys() requires 1 argument");
+             }
+
+             let dictionary = self.evaluate(&arguments[0]);
+
+             Some(dictionary::keys(dictionary))
+           }
+           "values" => {
+              if arguments.len() != 1 {
+                  panic!("values() expects 1 argument");
+              }
+
+              let value = self.evaluate(&arguments[0]);
+
+              Some(dictionary::values(value))
+           }
+           "has_key" => {
+              if arguments.len() != 2 {
+                 panic!("has_key() expects 2 arguments");
+              }
+
+              let dictionary = self.evaluate(&arguments[0]);
+              let key = self.evaluate(&arguments[1]);
+
+              Some(dictionary::has_key(dictionary, key))
+           }
+           "remove_key" => {
+              if arguments.len() != 2 {
+                 panic!("remove_key() expects 2 arguments");
+              }
+
+              let dictionary = self.evaluate(&arguments[0]);
+              let key = self.evaluate(&arguments[1]);
+
+              Some(dictionary::remove(dictionary, key))
+           }
+           
+           //
            _ => None,
         }
     }

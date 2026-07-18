@@ -706,6 +706,10 @@ impl Parser {
                self.parse_array_expression()
            }
 
+           Token::LeftBrace => {
+               self.parse_dictionary_expression()
+           }
+
            _ => None,
        }
     }
@@ -772,6 +776,48 @@ impl Parser {
         Some(Expr::Array {
            elements,
         })
+    }
+    fn parse_dictionary_expression(&mut self) -> Option<Expr> {
+        // lewati '{'
+        self.advance();
+
+        let mut entries = Vec::new();
+
+        while !matches!(self.current_token(), Token::RightBrace) {
+
+             // key harus string
+             let key = match self.current_token() {
+                Token::String(text) => Expr::String(text.clone()),
+                _ => return None,
+             };
+
+             // lewati key
+             self.advance();
+
+             // harus ':'
+             match self.current_token() {
+                Token::Colon => {}
+                _ => return None,
+             }
+
+             // lewati ':'
+             self.advance();
+
+             let value = self.parse_expression(Precedence::Lowest)?;
+
+             entries.push((key, value));
+
+             if matches!(self.current_token(), Token::Comma) {
+                 self.advance();
+             }
+         }
+
+         // lewati '}'
+         self.advance();
+
+         Some(Expr::Dictionary {
+             entries,
+         })
     } 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expr> {
        let mut left = self.parse_primary()?;
@@ -835,6 +881,7 @@ impl Parser {
             _ => Precedence::Lowest,
        }
     }
+/*
     fn peek_precedence(&self) -> Precedence {
       match self.peek_token() {
         Some(Token::EqualEqual) | Some(Token::BangEqual) => Precedence::Equality,
@@ -858,4 +905,5 @@ impl Parser {
         _ => Precedence::Lowest,
       }
     }
+*/
 }

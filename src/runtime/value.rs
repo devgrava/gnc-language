@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 use crate::ast::Stmt;
 use crate::runtime::Environment;
@@ -12,6 +13,7 @@ pub enum Value {
     Null,
 
     Array(Rc<RefCell<Vec<Value>>>),
+    Dictionary(Rc<RefCell<HashMap<String, Value>>>),
 
     Function {
         params: Vec<String>,

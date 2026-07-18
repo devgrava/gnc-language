@@ -1,0 +1,10 @@
+let user = {
+    "name": "Didit",
+    "age": 25,
+    "country": "Indonesia"
+};
+
+remove_key(user, "age");
+
+print(has_key(user, "age"));
+print(keys(user));
