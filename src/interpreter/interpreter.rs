@@ -272,16 +272,64 @@ impl Interpreter {
                 self.env.get(name).unwrap_or(Value::Null)
             }
 
+            // Start Expr::Binary
             Expr::Binary {
-                left,
-                operator,
-                right,
+               left,
+               operator,
+               right,
             } => {
-                let left = self.evaluate(left);
-                let right = self.evaluate(right);
 
-                self.eval_binary(left, operator, right)
+               let left_value = self.evaluate(left);
+
+               match operator.as_str() {
+
+                  "&&" => {
+                      match left_value {
+                         Value::Boolean(false) => {
+                             Value::Boolean(false)
+                         }
+
+                         Value::Boolean(true) => {
+                             let right_value = self.evaluate(right);
+
+                             match right_value {
+                                 Value::Boolean(v) => Value::Boolean(v),
+                                 _ => panic!("Operator && requires boolean operands"),
+                             }
+                         }
+
+                         _ => panic!("Operator && requires boolean operands"),
+                      }
+                   }
+
+                   "||" => {
+                      match left_value {
+                          Value::Boolean(true) => {
+                              Value::Boolean(true)
+                          }
+
+                          Value::Boolean(false) => {
+                              let right_value = self.evaluate(right);
+
+                              match right_value {
+                                 Value::Boolean(v) => Value::Boolean(v),
+                                 _ => panic!("Operator || requires boolean operands"),
+                              }
+                          }
+
+                          _ => panic!("Operator || requires boolean operands"),
+                       }
+                     }
+
+                     _ => {
+                       let right_value = self.evaluate(right);
+
+                       self.eval_binary(left_value, operator, right_value)
+                     }
+                 }
             }
+            // End Expr::Binary
+
             Expr::Call { callee, arguments } => {
 
                 if let Expr::Identifier(name) = &**callee {
