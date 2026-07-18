@@ -57,6 +57,9 @@ impl Parser {
     fn parse_statement(&mut self) -> Option<Stmt> {
       match self.current_token() {
         Token::Keyword(Keyword::Let) => self.parse_let_statement(),
+        Token::Keyword(Keyword::Import) => {
+           self.parse_import_statement()
+        }
         Token::Keyword(Keyword::Print) => self.parse_print_statement(),
         Token::Keyword(Keyword::If) => self.parse_if_statement(),
         Token::Keyword(Keyword::While) => self.parse_while_statement(),
@@ -218,6 +221,32 @@ impl Parser {
        self.advance();
 
        Some(stmt)
+    }
+    fn parse_import_statement(&mut self) -> Option<Stmt> {
+       // consume 'import'
+       self.advance();
+
+       let module = match self.current_token() {
+           Token::Identifier(name) => name.clone(),
+
+           Token::String(name) => name.clone(),
+
+           _ => {
+               panic!("Expected module name after 'import'");
+           }
+       };
+
+       self.advance();
+
+       if !matches!(self.current_token(), Token::Semicolon) {
+           panic!("Expected ';' after import statement");
+       }
+
+       self.advance();
+
+       Some(Stmt::Import {
+           module,
+       })
     }
     fn parse_assign_core(&mut self) -> Option<Stmt> {
        let name = match self.current_token() {

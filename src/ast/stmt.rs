@@ -41,6 +41,9 @@ pub enum Stmt {
     Expression {
         expression: Expr,
     },
+    Import {
+       module: String,
+    },
     For {
       init: Box<Stmt>,
       condition: Expr,

@@ -1,3 +1,4 @@
+
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -12,16 +13,20 @@ use crate::builtin::{
 
 use crate::ast::{Program, Stmt, Expr};
 use crate::runtime::{Environment, Value};
+use crate::module::registry::ModuleRegistry;
+use crate::module::loader::ModuleLoader;
 use super::signal::RuntimeSignal;
 
 pub struct Interpreter {
     env: Environment,
+    module_loader: ModuleLoader,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         Self {
             env: Environment::new(),
+            module_loader: ModuleLoader::new(),
         }
     }
 
@@ -266,6 +271,19 @@ impl Interpreter {
                  let _ = self.evaluate(expression);
                  Ok(())
               }
+              //Start Import
+              Stmt::Import { module } => {
+                 if !ModuleRegistry::exists(module) {
+                   panic!("Unknown module '{}'", module);
+                 }
+
+                 if !self.module_loader.is_loaded(module) {
+                    self.module_loader.load(module);
+                 }
+
+                 Ok(())
+              }
+              // End Import
         }
     }
 

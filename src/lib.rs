@@ -7,3 +7,4 @@ pub mod runtime;
 pub mod error;
 pub mod utils;
 pub mod builtin;
+pub mod module;
