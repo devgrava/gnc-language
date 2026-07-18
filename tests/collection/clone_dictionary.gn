@@ -1,0 +1,11 @@
+let original = {
+    "name": "Didit",
+    "age": 25
+};
+
+let copy = clone(original);
+
+set(copy, "name", "GNC");
+
+print(original["name"]);
+print(copy["name"]);

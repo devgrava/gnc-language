@@ -1,0 +1,14 @@
+let user = {
+    "name": "Didit"
+};
+
+let extra = {
+    "age": 25,
+    "country": "Indonesia"
+};
+
+merge(user, extra);
+
+print(user["name"]);
+print(user["age"]);
+print(user["country"]);

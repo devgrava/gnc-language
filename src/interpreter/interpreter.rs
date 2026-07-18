@@ -717,7 +717,52 @@ impl Interpreter {
 
               Some(dictionary::remove(dictionary, key))
            }
-           
+           "set" => {
+              if arguments.len() != 3 {
+                 panic!("set() expects 3 arguments");
+              }
+
+              let dictionary = self.evaluate(&arguments[0]);
+              let key = self.evaluate(&arguments[1]);
+              let value = self.evaluate(&arguments[2]);
+
+              Some(dictionary::set(dictionary, key, value))
+           }
+           "get" => {
+              if arguments.len() != 2 && arguments.len() != 3 {
+                  panic!("get() expects 2 or 3 arguments");
+              }
+
+              let dictionary = self.evaluate(&arguments[0]);
+              let key = self.evaluate(&arguments[1]);
+
+              let default = if arguments.len() == 3 {
+                 Some(self.evaluate(&arguments[2]))
+              } else {
+                 None
+              };
+
+              Some(dictionary::get(dictionary, key, default))
+           }           
+           "merge" => {
+              if arguments.len() != 2 {
+                 panic!("merge() expects 2 arguments");
+              }
+
+              let target = self.evaluate(&arguments[0]);
+              let source = self.evaluate(&arguments[1]);
+
+              Some(dictionary::merge(target, source))
+           }
+           "clone" => {
+              if arguments.len() != 1 {
+                panic!("clone() expects 1 argument");
+              }
+
+              let dictionary = self.evaluate(&arguments[0]);
+
+              Some(dictionary::clone(dictionary))
+           }
            //
            _ => None,
         }

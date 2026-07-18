@@ -1,0 +1,12 @@
+let user = {
+    "name": "Didit",
+    "age": 25
+};
+
+print(get(user, "name"));
+print(get(user, "age"));
+
+print(get(user, "country"));
+print(get(user, "country", "Indonesia"));
+
+print(get(user, "score", 100));
