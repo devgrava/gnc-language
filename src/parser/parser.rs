@@ -228,34 +228,87 @@ impl Parser {
        // lewati identifier
        self.advance();
 
-       let value = match self.current_token() {
+       let (operator, value) = match self.current_token() {
             Token::Equal => {
                // lewati '='
                self.advance();
 
-               self.parse_expression(Precedence::Lowest)?
+               (
+                 "=".to_string(),
+                 self.parse_expression(Precedence::Lowest)?
+               )
+            }
+            Token::PlusEqual => {
+               self.advance();
+
+               (
+                 "+=".to_string(),
+                 self.parse_expression(Precedence::Lowest)?
+               )
+            }
+
+            Token::MinusEqual => {
+               self.advance();
+
+               (
+                 "-=".to_string(),
+                 self.parse_expression(Precedence::Lowest)?
+               )
+            }
+
+            Token::StarEqual => {
+               self.advance();
+
+               (
+                 "*=".to_string(),
+                 self.parse_expression(Precedence::Lowest)?
+               )
+            }
+
+            Token::SlashEqual => {
+               self.advance();
+
+               (
+                  "/=".to_string(),
+                  self.parse_expression(Precedence::Lowest)?
+               )
+            }
+
+            Token::PercentEqual => {
+               self.advance();
+
+               (
+                  "%=".to_string(),
+                  self.parse_expression(Precedence::Lowest)?
+               )
             }
 
             Token::PlusPlus => {
                // lewati '++'
                self.advance();
 
-               Expr::Binary {
-                  left: Box::new(Expr::Identifier(name.clone())),
-                  operator: "+".to_string(),
-                  right: Box::new(Expr::Number(1.0)),
-               }
+               (
+                 "+=".to_string(),
+                 Expr::Binary {
+                   left: Box::new(Expr::Identifier(name.clone())),
+                   operator: "+".to_string(),
+                   right: Box::new(Expr::Number(1.0)),
+                 }
+               )
             }
 
             Token::MinusMinus => {
                // lewati '--'
                self.advance();
 
-               Expr::Binary {
-                  left: Box::new(Expr::Identifier(name.clone())),
-                  operator: "-".to_string(),
-                  right: Box::new(Expr::Number(1.0)),
-               }
+               (
+                 "-=".to_string(),
+                 Expr::Binary {
+                    left: Box::new(Expr::Identifier(name.clone())),
+                    operator: "-".to_string(),
+                    right: Box::new(Expr::Number(1.0)),
+                 }
+               )
             }
 
             _ => return None,
@@ -263,6 +316,7 @@ impl Parser {
 
          Some(Stmt::Assign {
             name,
+            operator,
             value,
          })
     }   

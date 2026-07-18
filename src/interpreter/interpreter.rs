@@ -59,15 +59,46 @@ impl Interpreter {
                 self.env.define(name.clone(), value);
                 Ok(())
             }
-
-            Stmt::Assign { name, value } => {
+            // Start Stmt::Assign
+            Stmt::Assign { name, operator, value } => {
                 let value = self.evaluate(value);
 
-                if !self.env.assign(name, value) {
-                   panic!("Undefined variable '{}'", name);
-                }
-                Ok(())
+                let final_value = match operator.as_str() {
+                   "=" => value,
+
+                   "+=" => {
+                      let old = self.env.get(name).unwrap_or(Value::Null);
+                      self.eval_binary(old, &"+".to_string(), value)
+                   }
+
+                   "-=" => {
+                      let old = self.env.get(name).unwrap_or(Value::Null);
+                      self.eval_binary(old, &"-".to_string(), value)
+                   }
+
+                   "*=" => {
+                      let old = self.env.get(name).unwrap_or(Value::Null);
+                      self.eval_binary(old, &"*".to_string(), value)
+                   }
+
+                   "/=" => {
+                      let old = self.env.get(name).unwrap_or(Value::Null);
+                      self.eval_binary(old, &"/".to_string(), value)
+                   }
+
+                   "%=" => {
+                      let old = self.env.get(name).unwrap_or(Value::Null);
+                      self.eval_binary(old, &"%".to_string(), value)
+                   }
+
+                   _ => panic!("Unknown assignment operator {}", operator),
+               };
+
+               self.env.assign(name, final_value);
+
+               Ok(())
             }
+            // End Stmt::Assign
 
             Stmt::Print { value } => {
                 let value = self.evaluate(value);

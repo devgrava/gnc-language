@@ -8,13 +8,15 @@ pub enum Stmt {
     },
 
     Assign {
-        name: String,
-        value: Expr,
+       name: String,
+       operator: String,
+       value: Expr,
     },
     
     Print {
         value: Expr,
     },
+
     If {
         condition: Expr,
         then_branch: Vec<Stmt>,
