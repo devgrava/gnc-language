@@ -9,11 +9,17 @@ pub struct Parser {
 }
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 enum Precedence {
-    Lowest = 0,
+    Lowest,
+
+    LogicalOr,
+    LogicalAnd,
+
     Equality,
     Comparison,
+
     Term,
     Factor,
+
     Unary,
 }
 
@@ -736,6 +742,8 @@ impl Parser {
         Token::LessEqual => "<=",
         Token::Greater => ">",
         Token::GreaterEqual => ">=",
+        Token::AndAnd => "&&",
+        Token::OrOr => "||",
         _ => return Some(left),
       }
       .to_string();
@@ -758,6 +766,9 @@ impl Parser {
        match self.current_token() {
           Token::EqualEqual | Token::BangEqual => Precedence::Equality,
 
+          Token::OrOr => Precedence::LogicalOr,
+          Token::AndAnd => Precedence::LogicalAnd,
+ 
           Token::Less
           | Token::LessEqual
           | Token::Greater
@@ -773,6 +784,10 @@ impl Parser {
     fn peek_precedence(&self) -> Precedence {
       match self.peek_token() {
         Some(Token::EqualEqual) | Some(Token::BangEqual) => Precedence::Equality,
+
+        Some(Token::OrOr) => Precedence::LogicalOr,
+
+        Some(Token::AndAnd) => Precedence::LogicalAnd,
 
         Some(Token::Less)
         | Some(Token::LessEqual)

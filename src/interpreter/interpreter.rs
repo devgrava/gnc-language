@@ -558,36 +558,63 @@ impl Interpreter {
            _ => None,
         }
     }
-
+    // Start eval_binary(){}
     fn eval_binary(
-        &self,
-        left: Value,
-        operator: &String,
-        right: Value,
+       &self,
+       left: Value,
+       operator: &String,
+       right: Value,
     ) -> Value {
-        match (left, right) {
-            (Value::Number(a), Value::Number(b)) => {
-                match operator.as_str() {
-                    "+" => Value::Number(a + b),
-                    "-" => Value::Number(a - b),
-                    "*" => Value::Number(a * b),
-                    "/" => Value::Number(a / b),
-                    "%" => Value::Number(a % b),
-
-                    "==" => Value::Boolean(a == b),
-                    "!=" => Value::Boolean(a != b),
-
-                    "<" => Value::Boolean(a < b),
-                    "<=" => Value::Boolean(a <= b),
-
-                    ">" => Value::Boolean(a > b),
-                    ">=" => Value::Boolean(a >= b),
-
-                    _ => Value::Null,
-                }
+        // Start match operator.as_str()
+        match operator.as_str() {
+           "&&" => {
+               match (left, right) {
+                  (Value::Boolean(a), Value::Boolean(b)) => {
+                      Value::Boolean(a && b)
+                  }
+                  _ => panic!("Operator && requires boolean operands"),
+               }
             }
 
-            _ => Value::Null,
+            "||" => {
+               match (left, right) {
+                  (Value::Boolean(a), Value::Boolean(b)) => {
+                      Value::Boolean(a || b)
+                  }
+                  _ => panic!("Operator || requires boolean operands"),
+               }
+             }
+             
+             // Start _=>{
+             _ => {
+                match (left, right) {
+                   (Value::Number(a), Value::Number(b)) => {
+                       match operator.as_str() {
+                          "+" => Value::Number(a + b),
+                          "-" => Value::Number(a - b),
+                          "*" => Value::Number(a * b),
+                          "/" => Value::Number(a / b),
+                          "%" => Value::Number(a % b),
+
+                          "==" => Value::Boolean(a == b),
+                          "!=" => Value::Boolean(a != b),
+
+                          "<" => Value::Boolean(a < b),
+                          "<=" => Value::Boolean(a <= b),
+
+                          ">" => Value::Boolean(a > b),
+                          ">=" => Value::Boolean(a >= b),
+
+                          _ => Value::Null,
+                       }
+                   }
+
+                   _ => Value::Null,
+                }
+            }
         }
+        // End match operator.as_str()
     }
+    // End eval_binary()
+                   
 }

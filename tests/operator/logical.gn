@@ -1,0 +1,10 @@
+print(true && true);
+print(true && false);
+
+print(false || true);
+print(false || false);
+
+let x = 10;
+
+print(x > 5 && x < 20);
+print(x < 5 || x == 10);
