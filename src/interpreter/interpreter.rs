@@ -295,17 +295,70 @@ impl Interpreter {
               }
               //Start Import
               Stmt::Import { module } => {
-                 if !ModuleRegistry::exists(module)
-                     && !self.module_loader.module_exists(module)
-                 {
-                     panic!("Unknown module '{}'", module);
+                 if !ModuleRegistry::exists(module) {
+
+                    if let Some(directory) = self.current_directory() {
+
+                       if !self
+                          .module_loader
+                          .module_exists_from_directory(
+                             directory.as_path(),
+                             module,
+                          )
+                       {
+                          panic!("Unknown module '{}'", module);
+                       }
+
+                    } else if !self.module_loader.module_exists(module) {
+
+                       panic!("Unknown module '{}'", module);
+
+                    }
+
                  }
 
                  if self.module_loader.is_loaded(module) {
                      return Ok(());
                  }
 
-                 let source = ModuleLoader::load_source(module);
+                 if let Some(directory) = self.current_directory() {
+
+                    if self
+                      .module_loader
+                      .module_exists_from_directory(
+                          directory.as_path(),
+                          module,
+                      )
+                    {
+
+                       let path = self
+                         .module_loader
+                         .resolve_from_directory(
+                             directory.as_path(),
+                             module,
+                         );
+
+                       let source = self
+                          .module_loader
+                          .load_source_from_directory(
+                              directory.as_path(),
+                              module,
+                          );
+
+                       self.module_loader.mark_loaded(module);
+
+                       runner::run_source_with_path(
+                          source,
+                          path,
+                          self,
+                       );
+
+                       return Ok(());
+                    }
+
+                 }
+
+                 let source = self.module_loader.load_source(module);
 
                  self.module_loader.mark_loaded(module);
 

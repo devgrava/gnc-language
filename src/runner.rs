@@ -8,15 +8,18 @@ pub fn run_source(
     source: String,
     interpreter: &mut Interpreter,
 ) {
-    run_source_with_file(source, "", interpreter);
+    run_source_with_path(
+        source,
+        PathBuf::new(),
+        interpreter,
+    );
 }
 
-pub fn run_source_with_file(
+pub fn run_source_with_path(
     source: String,
-    filename: &str,
+    path: PathBuf,
     interpreter: &mut Interpreter,
 ) {
-    let path = PathBuf::from(filename);
 
     interpreter.set_current_file(path);
 

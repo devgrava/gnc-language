@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-
 #[derive(Debug, Clone)]
 pub struct ExecutionContext {
     current_file: Option<PathBuf>,
@@ -30,6 +29,12 @@ impl ExecutionContext {
 
     pub fn current_directory(&self) -> Option<&PathBuf> {
         self.current_directory.as_ref()
+    }
+
+    pub fn current_directory_owned(
+        &self,
+    ) -> Option<PathBuf> {
+        self.current_directory.clone()
     }
 
     pub fn clear(&mut self) {

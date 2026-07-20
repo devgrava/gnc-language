@@ -27,5 +27,9 @@ fn main() {
     // Interpreter
     let mut interpreter = Interpreter::new();
 
-    runner::run_source_with_file(source, filename, &mut interpreter);
+    runner::run_source_with_path(
+         source, 
+         std::path::PathBuf::from(filename), 
+         &mut interpreter,
+    );
 }
