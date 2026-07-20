@@ -1,4 +1,3 @@
-
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -13,13 +12,16 @@ use crate::builtin::{
 
 use crate::ast::{Program, Stmt, Expr};
 use crate::runtime::{Environment, Value};
+use crate::context::execution::ExecutionContext;
 use crate::module::registry::ModuleRegistry;
 use crate::module::loader::ModuleLoader;
+use crate::runner;
 use super::signal::RuntimeSignal;
 
 pub struct Interpreter {
     env: Environment,
     module_loader: ModuleLoader,
+    context: ExecutionContext,
 }
 
 impl Interpreter {
@@ -27,7 +29,27 @@ impl Interpreter {
         Self {
             env: Environment::new(),
             module_loader: ModuleLoader::new(),
+            context: ExecutionContext::new(),
         }
+    }
+
+    pub fn set_current_file(
+       &mut self,
+       path: std::path::PathBuf,
+    ) {
+       self.context.set_current_file(path);
+    }
+
+    pub fn current_file(
+       &self,
+    ) -> Option<&std::path::PathBuf> {
+       self.context.current_file()
+    }
+
+    pub fn current_directory(
+       &self,
+    ) -> Option<&std::path::PathBuf> {
+       self.context.current_directory()
     }
 
     pub fn run(&mut self, program: &Program) {
@@ -273,13 +295,21 @@ impl Interpreter {
               }
               //Start Import
               Stmt::Import { module } => {
-                 if !ModuleRegistry::exists(module) {
-                   panic!("Unknown module '{}'", module);
+                 if !ModuleRegistry::exists(module)
+                     && !self.module_loader.module_exists(module)
+                 {
+                     panic!("Unknown module '{}'", module);
                  }
 
-                 if !self.module_loader.is_loaded(module) {
-                    self.module_loader.load(module);
+                 if self.module_loader.is_loaded(module) {
+                     return Ok(());
                  }
+
+                 let source = ModuleLoader::load_source(module);
+
+                 self.module_loader.mark_loaded(module);
+
+                 runner::run_source(source, self);
 
                  Ok(())
               }

@@ -2,9 +2,7 @@ use std::env;
 use std::fs;
 
 use gnc::interpreter::Interpreter;
-use gnc::lexer::Lexer;
-use gnc::parser::Parser;
-use gnc::token::Token;
+use gnc::runner;
 
 fn main() {
     // Ambil argumen command line
@@ -18,36 +16,16 @@ fn main() {
     let filename = &args[1];
 
     if !filename.ends_with(".gn") {
-        eprintln!("Error: file harus berekstensi .gn");
+        eprintln!("Error: file must have a .gn extension");
         std::process::exit(1);
     }
 
-    // Baca isi file
+    // Read source file
     let source = fs::read_to_string(filename)
-        .expect("Tidak dapat membaca file");
-
-    // Lexer
-    let mut lexer = Lexer::new(source);
-
-    let mut tokens = Vec::new();
-
-    loop {
-        let token = lexer.next_token();
-        let is_eof = token == Token::EOF;
-
-        tokens.push(token);
-       // println!("{:?}", tokens.last().unwrap());
-
-        if is_eof {
-            break;
-        }
-    }
-
-    // Parser
-    let mut parser = Parser::new(tokens);
-    let program = parser.parse_program();
+        .expect("Failed to read source file");
 
     // Interpreter
     let mut interpreter = Interpreter::new();
-    interpreter.run(&program);
+
+    runner::run_source_with_file(source, filename, &mut interpreter);
 }
