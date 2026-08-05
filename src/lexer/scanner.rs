@@ -15,7 +15,7 @@ impl Scanner {
     }
     pub fn advance(&mut self) -> Option<char> {
         if self.is_at_end() {
-           return None;
+            return None;
         }
 
         let ch = self.source[self.current];
@@ -26,27 +26,26 @@ impl Scanner {
         if self.is_at_end() {
             None
         } else {
-           Some(self.source[self.current])
+            Some(self.source[self.current])
         }
     }
     pub fn peek_next(&self) -> Option<char> {
-       if self.current + 1 >= self.source.len() {
-           None
-       } else {
-           Some(self.source[self.current + 1])
-       }
+        if self.current + 1 >= self.source.len() {
+            None
+        } else {
+            Some(self.source[self.current + 1])
+        }
     }
     pub fn match_char(&mut self, expected: char) -> bool {
-       if self.is_at_end() {
+        if self.is_at_end() {
             return false;
-       }
+        }
 
-       if self.source[self.current] != expected {
-           return false;
-       }
+        if self.source[self.current] != expected {
+            return false;
+        }
 
-       self.current += 1;
-       true
+        self.current += 1;
+        true
     }
-    
 }

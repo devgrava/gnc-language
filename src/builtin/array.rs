@@ -2,13 +2,9 @@ use crate::runtime::{Value, equals};
 
 pub fn len(value: Value) -> Value {
     match value {
-        Value::Array(values) => {
-            Value::Number(values.borrow().len() as f64)
-        }
+        Value::Array(values) => Value::Number(values.borrow().len() as f64),
 
-        Value::String(text) => {
-            Value::Number(text.len() as f64)
-        }
+        Value::String(text) => Value::Number(text.len() as f64),
 
         _ => {
             panic!("len() hanya menerima array atau string");
@@ -31,9 +27,7 @@ pub fn push(array: Value, value: Value) -> Value {
 
 pub fn pop(array: Value) -> Value {
     match array {
-        Value::Array(values) => {
-            values.borrow_mut().pop().unwrap_or(Value::Null)
-        }
+        Value::Array(values) => values.borrow_mut().pop().unwrap_or(Value::Null),
 
         _ => {
             panic!("pop() hanya menerima array");
@@ -129,13 +123,7 @@ pub fn reverse(array: Value) -> Value {
 
 pub fn first(array: Value) -> Value {
     match array {
-        Value::Array(values) => {
-            values
-                .borrow()
-                .first()
-                .cloned()
-                .unwrap_or(Value::Null)
-        }
+        Value::Array(values) => values.borrow().first().cloned().unwrap_or(Value::Null),
 
         _ => {
             panic!("first() hanya menerima array");
@@ -145,13 +133,7 @@ pub fn first(array: Value) -> Value {
 
 pub fn last(array: Value) -> Value {
     match array {
-        Value::Array(values) => {
-            values
-                .borrow()
-                .last()
-                .cloned()
-                .unwrap_or(Value::Null)
-        }
+        Value::Array(values) => values.borrow().last().cloned().unwrap_or(Value::Null),
 
         _ => {
             panic!("last() hanya menerima array");
@@ -161,9 +143,7 @@ pub fn last(array: Value) -> Value {
 
 pub fn is_empty(array: Value) -> Value {
     match array {
-        Value::Array(values) => {
-            Value::Boolean(values.borrow().is_empty())
-        }
+        Value::Array(values) => Value::Boolean(values.borrow().is_empty()),
 
         _ => {
             panic!("is_empty() hanya menerima array");

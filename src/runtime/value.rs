@@ -1,6 +1,6 @@
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::ast::Stmt;
 use crate::runtime::Environment;
@@ -19,5 +19,16 @@ pub enum Value {
         params: Vec<String>,
         body: Vec<Stmt>,
         env: Environment,
+    },
+
+    StructDefinition {
+        name: String,
+        fields: Vec<String>,
+        methods: HashMap<String, Value>,
+    },
+
+    StructInstance {
+        name: String,
+        fields: Rc<RefCell<HashMap<String, Value>>>,
     },
 }

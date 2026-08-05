@@ -10,17 +10,11 @@ impl ModuleContext {
         }
     }
 
-    pub fn add(
-        &mut self,
-        module: String,
-    ) {
+    pub fn add(&mut self, module: String) {
         self.loaded_modules.push(module);
     }
 
-    pub fn contains(
-        &self,
-        module: &str,
-    ) -> bool {
+    pub fn contains(&self, module: &str) -> bool {
         self.loaded_modules.iter().any(|m| m == module)
     }
 

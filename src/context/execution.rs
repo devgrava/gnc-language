@@ -13,12 +13,8 @@ impl ExecutionContext {
         }
     }
 
-    pub fn set_current_file(
-        &mut self,
-        path: PathBuf,
-    ) {
-        self.current_directory =
-            path.parent().map(|p| p.to_path_buf());
+    pub fn set_current_file(&mut self, path: PathBuf) {
+        self.current_directory = path.parent().map(|p| p.to_path_buf());
 
         self.current_file = Some(path);
     }
@@ -31,9 +27,7 @@ impl ExecutionContext {
         self.current_directory.as_ref()
     }
 
-    pub fn current_directory_owned(
-        &self,
-    ) -> Option<PathBuf> {
+    pub fn current_directory_owned(&self) -> Option<PathBuf> {
         self.current_directory.clone()
     }
 

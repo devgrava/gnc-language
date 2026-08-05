@@ -1,26 +1,14 @@
 use crate::interpreter::Interpreter;
-use std::path::PathBuf;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::token::Token;
+use std::path::PathBuf;
 
-pub fn run_source(
-    source: String,
-    interpreter: &mut Interpreter,
-) {
-    run_source_with_path(
-        source,
-        PathBuf::new(),
-        interpreter,
-    );
+pub fn run_source(source: String, interpreter: &mut Interpreter) {
+    run_source_with_path(source, PathBuf::new(), interpreter);
 }
 
-pub fn run_source_with_path(
-    source: String,
-    path: PathBuf,
-    interpreter: &mut Interpreter,
-) {
-
+pub fn run_source_with_path(source: String, path: PathBuf, interpreter: &mut Interpreter) {
     interpreter.set_current_file(path);
 
     // Lexer

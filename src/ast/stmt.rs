@@ -8,11 +8,11 @@ pub enum Stmt {
     },
 
     Assign {
-       name: String,
-       operator: String,
-       value: Expr,
+        name: String,
+        operator: String,
+        value: Expr,
     },
-    
+
     Print {
         value: Expr,
     },
@@ -27,27 +27,27 @@ pub enum Stmt {
         body: Vec<Stmt>,
     },
     Break,
-    
+
     Continue,
 
     Function {
-      name: String,
-      params: Vec<String>,
-      body: Vec<Stmt>,
+        name: String,
+        params: Vec<String>,
+        body: Vec<Stmt>,
     },
     Return {
-      value: Expr,
+        value: Expr,
     },
     Expression {
         expression: Expr,
     },
     Import {
-       module: String,
+        module: String,
     },
     For {
-      init: Box<Stmt>,
-      condition: Expr,
-      update: Box<Stmt>,
-      body: Vec<Stmt>,
+        init: Box<Stmt>,
+        condition: Expr,
+        update: Box<Stmt>,
+        body: Vec<Stmt>,
     },
 }

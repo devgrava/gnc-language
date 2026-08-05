@@ -1,5 +1,5 @@
-pub mod scanner;
 pub mod lexer;
+pub mod scanner;
 
 //pub mod identifier;
 //pub mod number;
@@ -7,5 +7,5 @@ pub mod lexer;
 //pub mod operator;
 //pub mod comment;
 
-pub use scanner::Scanner;
 pub use lexer::Lexer;
+pub use scanner::Scanner;

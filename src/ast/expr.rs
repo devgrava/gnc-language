@@ -20,8 +20,8 @@ pub enum Expr {
         right: Box<Expr>,
     },
     Call {
-       callee: Box<Expr>,
-       arguments: Vec<Expr>,
+        callee: Box<Expr>,
+        arguments: Vec<Expr>,
     },
     Array {
         elements: Vec<Expr>,

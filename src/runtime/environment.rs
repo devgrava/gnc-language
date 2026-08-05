@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use super::Value;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Environment {

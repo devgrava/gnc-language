@@ -21,15 +21,10 @@ fn main() {
     }
 
     // Read source file
-    let source = fs::read_to_string(filename)
-        .expect("Failed to read source file");
+    let source = fs::read_to_string(filename).expect("Failed to read source file");
 
     // Interpreter
     let mut interpreter = Interpreter::new();
 
-    runner::run_source_with_path(
-         source, 
-         std::path::PathBuf::from(filename), 
-         &mut interpreter,
-    );
+    runner::run_source_with_path(source, std::path::PathBuf::from(filename), &mut interpreter);
 }

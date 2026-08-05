@@ -1,7 +1,7 @@
 pub mod environment;
-pub mod value;
 pub mod equality;
+pub mod value;
 
 pub use environment::Environment;
-pub use value::Value;
 pub use equality::equals;
+pub use value::Value;

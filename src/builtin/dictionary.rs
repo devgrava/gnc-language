@@ -121,9 +121,7 @@ pub fn merge(target: Value, source: Value) -> Value {
     match (target, source) {
         (Value::Dictionary(target_map), Value::Dictionary(source_map)) => {
             for (key, value) in source_map.borrow().iter() {
-                target_map
-                    .borrow_mut()
-                    .insert(key.clone(), value.clone());
+                target_map.borrow_mut().insert(key.clone(), value.clone());
             }
 
             Value::Null
@@ -142,8 +140,11 @@ pub fn merge(target: Value, source: Value) -> Value {
 pub fn clone(dictionary: Value) -> Value {
     match dictionary {
         Value::Dictionary(map) => {
-            let copied: HashMap<String, Value> =
-                map.borrow().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+            let copied: HashMap<String, Value> = map
+                .borrow()
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect();
 
             Value::Dictionary(Rc::new(RefCell::new(copied)))
         }
