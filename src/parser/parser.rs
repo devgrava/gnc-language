@@ -64,6 +64,7 @@ impl Parser {
             Token::Keyword(Keyword::Break) => self.parse_break_statement(),
             Token::Keyword(Keyword::Continue) => self.parse_continue_statement(),
             Token::Keyword(Keyword::Fn) => self.parse_function_statement(),
+            Token::Keyword(Keyword::Struct) => self.parse_struct_statement(),
             Token::Keyword(Keyword::Return) => self.parse_return_statement(),
 
             Token::Identifier(_) => match self.peek_token() {
@@ -798,6 +799,46 @@ impl Parser {
 
         Some(Expr::Dictionary { entries })
     }
+
+    // Start parse_struct_statement
+    fn parse_struct_statement(&mut self) -> Option<Stmt> {
+        // Skip 'struct'
+        self.advance();
+
+        // Read struct name
+        let name = match self.current_token() {
+            Token::Identifier(name) => name.clone(),
+            _ => return None,
+        };
+
+        // Skip struct name
+        self.advance();
+
+        // Expect '{'
+        match self.current_token() {
+            Token::LeftBrace => {}
+            _ => return None,
+        }
+
+        // Skip '{'
+        self.advance();
+
+        // Temporary: no fields yet
+        let fields = Vec::new();
+
+        // Expect '}'
+        match self.current_token() {
+            Token::RightBrace => {}
+            _ => return None,
+        }
+
+        // Skip '}'
+        self.advance();
+
+        Some(Stmt::Struct { name, fields })
+    }
+    // End parse_struct_statement
+
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expr> {
         let mut left = self.parse_primary()?;
 

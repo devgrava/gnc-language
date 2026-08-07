@@ -1,0 +1,6 @@
+struct User {
+}
+
+let user = User();
+
+print(user);

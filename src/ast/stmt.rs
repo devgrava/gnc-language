@@ -50,4 +50,8 @@ pub enum Stmt {
         update: Box<Stmt>,
         body: Vec<Stmt>,
     },
+    Struct {
+        name: String,
+        fields: Vec<String>,
+    },
 }

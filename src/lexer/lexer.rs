@@ -32,6 +32,7 @@ impl Lexer {
         match text.as_str() {
             "let" => Token::Keyword(Keyword::Let),
             "fn" => Token::Keyword(Keyword::Fn),
+            "struct" => Token::Keyword(Keyword::Struct),
             "if" => Token::Keyword(Keyword::If),
             "else" => Token::Keyword(Keyword::Else),
             "while" => Token::Keyword(Keyword::While),

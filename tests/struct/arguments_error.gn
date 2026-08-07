@@ -1,0 +1,6 @@
+struct User {
+}
+
+let user = User("Didit");
+
+print("AFTER STRUCT CALL");

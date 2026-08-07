@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::builtin::{
@@ -333,6 +334,20 @@ impl Interpreter {
 
                 Ok(())
             } // End Import
+
+            // Start Stmt::Struct
+            Stmt::Struct { name, fields } => {
+                self.env.define(
+                    name.clone(),
+                    Value::StructDefinition {
+                        name: name.clone(),
+                        fields: fields.clone(),
+                        methods: HashMap::new(),
+                    },
+                );
+
+                Ok(())
+            } // End Stmt::Struct
         }
     }
 
@@ -406,9 +421,14 @@ impl Interpreter {
 
                 match function {
                     Value::StructDefinition { name, .. } => {
-                        println!("CALL STRUCT: {}", name);
+                        if !arguments.is_empty() {
+                            panic!("Struct '{}' does not accept arguments at this stage", name);
+                        }
 
-                        Value::Null
+                        Value::StructInstance {
+                            name: name.clone(),
+                            fields: Rc::new(RefCell::new(HashMap::new())),
+                        }
                     }
 
                     Value::Function { params, body, env } => {
