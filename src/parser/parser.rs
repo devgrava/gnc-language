@@ -823,8 +823,31 @@ impl Parser {
         // Skip '{'
         self.advance();
 
-        // Temporary: no fields yet
-        let fields = Vec::new();
+        let mut fields = Vec::new();
+
+        while !matches!(self.current_token(), Token::RightBrace | Token::EOF) {
+            let field = match self.current_token() {
+                Token::Identifier(name) => name.clone(),
+                _ => {
+                    panic!("Expected a field name inside struct");
+                }
+            };
+
+            fields.push(field);
+
+            // Skip field name
+            self.advance();
+
+            match self.current_token() {
+                Token::Semicolon => {}
+                _ => {
+                    panic!("Expected ';' after struct field");
+                }
+            }
+
+            // Skip ';'
+            self.advance();
+        }
 
         // Expect '}'
         match self.current_token() {

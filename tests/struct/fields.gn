@@ -1,0 +1,6 @@
+struct User {
+    name;
+    age;
+}
+
+print("Fields parsed");

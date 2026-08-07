@@ -420,14 +420,24 @@ impl Interpreter {
                 let function = self.evaluate(callee);
 
                 match function {
-                    Value::StructDefinition { name, .. } => {
+                    Value::StructDefinition {
+                        name,
+                        fields,
+                        methods: _,
+                    } => {
                         if !arguments.is_empty() {
                             panic!("Struct '{}' does not accept arguments at this stage", name);
                         }
 
+                        let mut instance_fields = HashMap::new();
+
+                        for field in &fields {
+                            instance_fields.insert(field.clone(), Value::Null);
+                        }
+
                         Value::StructInstance {
                             name: name.clone(),
-                            fields: Rc::new(RefCell::new(HashMap::new())),
+                            fields: Rc::new(RefCell::new(instance_fields)),
                         }
                     }
 
