@@ -33,4 +33,8 @@ pub enum Expr {
         object: Box<Expr>,
         index: Box<Expr>,
     },
+    Member {
+        object: Box<Expr>,
+        field: String,
+    },
 }

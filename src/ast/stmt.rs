@@ -8,7 +8,7 @@ pub enum Stmt {
     },
 
     Assign {
-        name: String,
+        target: Expr,
         operator: String,
         value: Expr,
     },

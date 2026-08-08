@@ -67,19 +67,46 @@ impl Parser {
             Token::Keyword(Keyword::Struct) => self.parse_struct_statement(),
             Token::Keyword(Keyword::Return) => self.parse_return_statement(),
 
-            Token::Identifier(_) => match self.peek_token() {
-                Some(Token::Equal)
-                | Some(Token::PlusPlus)
-                | Some(Token::MinusMinus)
-                | Some(Token::PlusEqual)
-                | Some(Token::MinusEqual)
-                | Some(Token::StarEqual)
-                | Some(Token::SlashEqual)
-                | Some(Token::PercentEqual) => self.parse_assign_statement(),
+            // Start Token::Identifier
+            Token::Identifier(_) => {
+                match self.peek_token() {
+                    Some(Token::Equal)
+                    | Some(Token::PlusPlus)
+                    | Some(Token::MinusMinus)
+                    | Some(Token::PlusEqual)
+                    | Some(Token::MinusEqual)
+                    | Some(Token::StarEqual)
+                    | Some(Token::SlashEqual)
+                    | Some(Token::PercentEqual) => self.parse_assign_statement(),
 
-                _ => self.parse_expression_statement(),
-            },
+                    Some(Token::Dot) => {
+                        // Check whether this is a member assignment.
+                        let after_dot = self.tokens.get(self.current + 2);
 
+                        match after_dot {
+                            Some(Token::Identifier(_)) => {
+                                let after_field = self.tokens.get(self.current + 3);
+
+                                match after_field {
+                                    Some(Token::Equal)
+                                    | Some(Token::PlusEqual)
+                                    | Some(Token::MinusEqual)
+                                    | Some(Token::StarEqual)
+                                    | Some(Token::SlashEqual)
+                                    | Some(Token::PercentEqual) => self.parse_assign_statement(),
+
+                                    _ => self.parse_expression_statement(),
+                                }
+                            }
+
+                            _ => self.parse_expression_statement(),
+                        }
+                    }
+
+                    _ => self.parse_expression_statement(),
+                }
+            }
+            // End Token::Identifier
             _ => None,
         }
     }
@@ -231,22 +258,44 @@ impl Parser {
 
         Some(Stmt::Import { module })
     }
+    // Start parse_assign_core
     fn parse_assign_core(&mut self) -> Option<Stmt> {
-        let name = match self.current_token() {
-            Token::Identifier(name) => name.clone(),
+        let mut target = match self.current_token() {
+            Token::Identifier(name) => Expr::Identifier(name.clone()),
             _ => return None,
         };
 
-        // lewati identifier
+        // Skip identifier
         self.advance();
+
+        // Support member access:
+        // user.name
+        if matches!(self.current_token(), Token::Dot) {
+            // Skip '.'
+            self.advance();
+
+            let field = match self.current_token() {
+                Token::Identifier(name) => name.clone(),
+                _ => return None,
+            };
+
+            // Skip field name
+            self.advance();
+
+            target = Expr::Member {
+                object: Box::new(target),
+                field,
+            };
+        }
 
         let (operator, value) = match self.current_token() {
             Token::Equal => {
-                // lewati '='
+                // Skip '='
                 self.advance();
 
                 ("=".to_string(), self.parse_expression(Precedence::Lowest)?)
             }
+
             Token::PlusEqual => {
                 self.advance();
 
@@ -278,42 +327,28 @@ impl Parser {
             }
 
             Token::PlusPlus => {
-                // lewati '++'
                 self.advance();
 
-                (
-                    "+=".to_string(),
-                    Expr::Binary {
-                        left: Box::new(Expr::Identifier(name.clone())),
-                        operator: "+".to_string(),
-                        right: Box::new(Expr::Number(1.0)),
-                    },
-                )
+                ("+=".to_string(), Expr::Number(1.0))
             }
 
             Token::MinusMinus => {
-                // lewati '--'
                 self.advance();
 
-                (
-                    "-=".to_string(),
-                    Expr::Binary {
-                        left: Box::new(Expr::Identifier(name.clone())),
-                        operator: "-".to_string(),
-                        right: Box::new(Expr::Number(1.0)),
-                    },
-                )
+                ("-=".to_string(), Expr::Number(1.0))
             }
 
             _ => return None,
         };
 
         Some(Stmt::Assign {
-            name,
+            target,
             operator,
             value,
         })
     }
+    // End parse_assign_core
+
     fn parse_assign_statement(&mut self) -> Option<Stmt> {
         let stmt = self.parse_assign_core()?;
 
@@ -674,6 +709,10 @@ impl Parser {
                     return self.parse_index_expression(expr);
                 }
 
+                if matches!(self.current_token(), Token::Dot) {
+                    return self.parse_member_expression(expr);
+                }
+
                 Some(expr)
             }
 
@@ -721,6 +760,27 @@ impl Parser {
             arguments,
         })
     }
+
+    // Start parse_member_expression()
+    fn parse_member_expression(&mut self, object: Expr) -> Option<Expr> {
+        // Skip '.'
+        self.advance();
+
+        let field = match self.current_token() {
+            Token::Identifier(name) => name.clone(),
+            _ => return None,
+        };
+
+        // Skip field name
+        self.advance();
+
+        Some(Expr::Member {
+            object: Box::new(object),
+            field,
+        })
+    }
+    // End parse_member_expression()
+
     fn parse_index_expression(&mut self, object: Expr) -> Option<Expr> {
         // lewati '['
         self.advance();
