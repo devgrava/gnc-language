@@ -46,12 +46,12 @@ impl Interpreter {
         self.context.current_directory()
     }
 
-    pub fn run(&mut self, program: &Program) {
+    pub fn run(&mut self, program: &Program) -> Result<(), RuntimeSignal> {
         for stmt in &program.statements {
-            if let Err(signal) = self.execute(stmt) {
-                panic!("Unexpected runtime signal: {:?}", signal);
-            }
+            self.execute(stmt)?;
         }
+
+        Ok(())
     }
 
     fn execute_block(
@@ -89,44 +89,113 @@ impl Interpreter {
             }
             // Start Stmt::Assign
             Stmt::Assign {
-                name,
+                target,
                 operator,
                 value,
             } => {
                 let value = self.evaluate(value);
 
-                let final_value = match operator.as_str() {
-                    "=" => value,
+                match target {
+                    Expr::Identifier(name) => {
+                        let final_value = match operator.as_str() {
+                            "=" => value,
 
-                    "+=" => {
-                        let old = self.env.get(name).unwrap_or(Value::Null);
-                        self.eval_binary(old, &"+".to_string(), value)
+                            "+=" => {
+                                let old = self.env.get(name).unwrap_or(Value::Null);
+                                self.eval_binary(old, &"+".to_string(), value)
+                            }
+
+                            "-=" => {
+                                let old = self.env.get(name).unwrap_or(Value::Null);
+                                self.eval_binary(old, &"-".to_string(), value)
+                            }
+
+                            "*=" => {
+                                let old = self.env.get(name).unwrap_or(Value::Null);
+                                self.eval_binary(old, &"*".to_string(), value)
+                            }
+
+                            "/=" => {
+                                let old = self.env.get(name).unwrap_or(Value::Null);
+                                self.eval_binary(old, &"/".to_string(), value)
+                            }
+
+                            "%=" => {
+                                let old = self.env.get(name).unwrap_or(Value::Null);
+                                self.eval_binary(old, &"%".to_string(), value)
+                            }
+
+                            _ => panic!("Unknown assignment operator '{}'", operator),
+                        };
+
+                        self.env.assign(name, final_value);
                     }
 
-                    "-=" => {
-                        let old = self.env.get(name).unwrap_or(Value::Null);
-                        self.eval_binary(old, &"-".to_string(), value)
+                    Expr::Member { object, field } => {
+                        let object_value = self.evaluate(object);
+
+                        match object_value {
+                            Value::StructInstance { name, fields } => {
+                                let mut fields = fields.borrow_mut();
+
+                                if !fields.contains_key(field) {
+                                    return Err(RuntimeSignal::Error(format!(
+                                        "Unknown field '{}' in struct '{}'",
+                                        field, name
+                                    )));
+                                }
+
+                                let final_value = match operator.as_str() {
+                                    "=" => value,
+
+                                    "+=" => {
+                                        let old = fields.get(field).cloned().unwrap_or(Value::Null);
+
+                                        self.eval_binary(old, &"+".to_string(), value)
+                                    }
+
+                                    "-=" => {
+                                        let old = fields.get(field).cloned().unwrap_or(Value::Null);
+
+                                        self.eval_binary(old, &"-".to_string(), value)
+                                    }
+
+                                    "*=" => {
+                                        let old = fields.get(field).cloned().unwrap_or(Value::Null);
+
+                                        self.eval_binary(old, &"*".to_string(), value)
+                                    }
+
+                                    "/=" => {
+                                        let old = fields.get(field).cloned().unwrap_or(Value::Null);
+
+                                        self.eval_binary(old, &"/".to_string(), value)
+                                    }
+
+                                    "%=" => {
+                                        let old = fields.get(field).cloned().unwrap_or(Value::Null);
+
+                                        self.eval_binary(old, &"%".to_string(), value)
+                                    }
+
+                                    _ => {
+                                        panic!("Unknown assignment operator '{}'", operator);
+                                    }
+                                };
+
+                                fields.insert(field.clone(), final_value);
+                            }
+
+                            _ => {
+                                panic!("Cannot assign field '{}' on a non-struct value", field);
+                            }
+                        }
                     }
 
-                    "*=" => {
-                        let old = self.env.get(name).unwrap_or(Value::Null);
-                        self.eval_binary(old, &"*".to_string(), value)
+                    _ => {
+                        panic!("Invalid assignment target");
                     }
-
-                    "/=" => {
-                        let old = self.env.get(name).unwrap_or(Value::Null);
-                        self.eval_binary(old, &"/".to_string(), value)
-                    }
-
-                    "%=" => {
-                        let old = self.env.get(name).unwrap_or(Value::Null);
-                        self.eval_binary(old, &"%".to_string(), value)
-                    }
-
-                    _ => panic!("Unknown assignment operator {}", operator),
-                };
-
-                self.env.assign(name, final_value);
+                }
 
                 Ok(())
             }
@@ -201,6 +270,9 @@ impl Interpreter {
                             Err(RuntimeSignal::Return(value)) => {
                                 return Err(RuntimeSignal::Return(value));
                             }
+                            Err(RuntimeSignal::Error(message)) => {
+                                return Err(RuntimeSignal::Error(message));
+                            }
                         }
                     }
                 }
@@ -250,6 +322,9 @@ impl Interpreter {
 
                             Err(RuntimeSignal::Return(value)) => {
                                 return Err(RuntimeSignal::Return(value));
+                            }
+                            Err(RuntimeSignal::Error(message)) => {
+                                return Err(RuntimeSignal::Error(message));
                             }
                         }
                     }
@@ -320,7 +395,7 @@ impl Interpreter {
 
                         self.module_loader.mark_loaded(module);
 
-                        runner::run_source_with_path(source, path, self);
+                        runner::run_source_with_path(source, path, self)?;
 
                         return Ok(());
                     }
@@ -330,7 +405,7 @@ impl Interpreter {
 
                 self.module_loader.mark_loaded(module);
 
-                runner::run_source(source, self);
+                runner::run_source(source, self)?;
 
                 Ok(())
             } // End Import
@@ -561,6 +636,35 @@ impl Interpreter {
 
                 Value::Dictionary(Rc::new(RefCell::new(map)))
             } // End Expr::Dictionary
+
+            // Start Expr::Member
+            Expr::Member { object, field } => {
+                let value = self.evaluate(object);
+
+                match value {
+                    Value::StructInstance { name, fields } => {
+                        let fields = fields.borrow();
+
+                        match fields.get(field) {
+                            Some(value) => value.clone(),
+
+                            None => {
+                                panic!(
+                                    "Runtime error: unknown field '{}' in struct '{}'",
+                                    field, name
+                                );
+                            }
+                        }
+                    }
+
+                    _ => {
+                        panic!(
+                            "Runtime error: cannot access field '{}' on a non-struct value",
+                            field
+                        );
+                    }
+                }
+            } // End Expr::Member
         }
     }
     fn call_builtin(&mut self, name: &str, arguments: &[Expr]) -> Option<Value> {

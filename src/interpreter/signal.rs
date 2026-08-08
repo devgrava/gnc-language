@@ -5,4 +5,5 @@ pub enum RuntimeSignal {
     Break,
     Continue,
     Return(Value),
+    Error(String),
 }

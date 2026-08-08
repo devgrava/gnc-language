@@ -2,6 +2,7 @@ use std::env;
 use std::fs;
 
 use gnc::interpreter::Interpreter;
+use gnc::interpreter::signal::RuntimeSignal;
 use gnc::runner;
 
 fn main() {
@@ -26,5 +27,16 @@ fn main() {
     // Interpreter
     let mut interpreter = Interpreter::new();
 
-    runner::run_source_with_path(source, std::path::PathBuf::from(filename), &mut interpreter);
+    match runner::run_source_with_path(source, std::path::PathBuf::from(filename), &mut interpreter)
+    {
+        Ok(()) => {}
+        Err(RuntimeSignal::Error(message)) => {
+            eprintln!("Runtime Error: {}", message);
+            std::process::exit(1);
+        }
+        Err(signal) => {
+            eprintln!("Runtime Error: {:?}", signal);
+            std::process::exit(1);
+        }
+    }
 }
