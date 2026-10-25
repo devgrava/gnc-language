@@ -26,6 +26,10 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
+    fn runtime_error(message: impl Into<String>) -> ! {
+        panic!("Runtime error: {}", message.into());
+    }
+
     pub fn new() -> Self {
         Self {
             env: Environment::new(),
@@ -83,7 +87,7 @@ impl Interpreter {
     fn execute(&mut self, stmt: &Stmt) -> Result<(), RuntimeSignal> {
         match stmt {
             Stmt::Let { name, value } => {
-                let value = self.evaluate(value);
+                let value = self.evaluate(value)?;
                 self.env.define(name.clone(), value);
                 Ok(())
             }
@@ -93,7 +97,7 @@ impl Interpreter {
                 operator,
                 value,
             } => {
-                let value = self.evaluate(value);
+                let value = self.evaluate(value)?;
 
                 match target {
                     Expr::Identifier(name) => {
@@ -132,7 +136,7 @@ impl Interpreter {
                     }
 
                     Expr::Member { object, field } => {
-                        let object_value = self.evaluate(object);
+                        let object_value = self.evaluate(object)?;
 
                         match object_value {
                             Value::StructInstance { name, fields } => {
@@ -201,7 +205,7 @@ impl Interpreter {
             }
             // End Stmt::Assign
             Stmt::Print { value } => {
-                let value = self.evaluate(value);
+                let value = self.evaluate(value)?;
                 println!("{:?}", value);
                 Ok(())
             }
@@ -210,7 +214,7 @@ impl Interpreter {
                 then_branch,
                 else_branch,
             } => {
-                let cond = self.evaluate(condition);
+                let cond = self.evaluate(condition)?;
 
                 let is_true = match cond {
                     Value::Boolean(v) => v,
@@ -238,7 +242,7 @@ impl Interpreter {
             }
             Stmt::While { condition, body } => {
                 loop {
-                    let cond = self.evaluate(condition);
+                    let cond = self.evaluate(condition)?;
 
                     let is_true = match cond {
                         Value::Boolean(v) => v,
@@ -290,7 +294,7 @@ impl Interpreter {
                 self.execute(init)?;
 
                 loop {
-                    let cond = self.evaluate(condition);
+                    let cond = self.evaluate(condition)?;
 
                     let is_true = match cond {
                         Value::Boolean(v) => v,
@@ -354,11 +358,11 @@ impl Interpreter {
             }
 
             Stmt::Return { value } => {
-                let value = self.evaluate(value);
+                let value = self.evaluate(value)?;
                 Err(RuntimeSignal::Return(value))
             }
             Stmt::Expression { expression } => {
-                let _ = self.evaluate(expression);
+                let _ = self.evaluate(expression)?;
                 Ok(())
             }
             //Start Import
@@ -426,38 +430,36 @@ impl Interpreter {
         }
     }
 
-    fn evaluate(&mut self, expr: &Expr) -> Value {
+    // start
+    // Start fn evaluate
+    fn evaluate(&mut self, expr: &Expr) -> Result<Value, RuntimeSignal> {
         match expr {
-            Expr::Number(n) => Value::Number(*n),
+            Expr::Number(n) => Ok(Value::Number(*n)),
 
-            Expr::String(s) => Value::String(s.clone()),
+            Expr::String(s) => Ok(Value::String(s.clone())),
 
-            Expr::Boolean(b) => Value::Boolean(*b),
+            Expr::Boolean(b) => Ok(Value::Boolean(*b)),
 
-            Expr::Null => Value::Null,
+            Expr::Null => Ok(Value::Null),
 
-            Expr::Identifier(name) => self.env.get(name).unwrap_or(Value::Null),
+            Expr::Identifier(name) => Ok(self.env.get(name).unwrap_or(Value::Null)),
 
-            // Start Expr::Binary
+            // Binary expressions
             Expr::Binary {
                 left,
                 operator,
                 right,
             } => {
-                let left_value = self.evaluate(left);
+                let left_value = self.evaluate(left)?;
 
-                match operator.as_str() {
+                Ok(match operator.as_str() {
                     "&&" => match left_value {
                         Value::Boolean(false) => Value::Boolean(false),
 
-                        Value::Boolean(true) => {
-                            let right_value = self.evaluate(right);
-
-                            match right_value {
-                                Value::Boolean(v) => Value::Boolean(v),
-                                _ => panic!("Operator && requires boolean operands"),
-                            }
-                        }
+                        Value::Boolean(true) => match self.evaluate(right)? {
+                            Value::Boolean(v) => Value::Boolean(v),
+                            _ => panic!("Operator && requires boolean operands"),
+                        },
 
                         _ => panic!("Operator && requires boolean operands"),
                     },
@@ -465,36 +467,32 @@ impl Interpreter {
                     "||" => match left_value {
                         Value::Boolean(true) => Value::Boolean(true),
 
-                        Value::Boolean(false) => {
-                            let right_value = self.evaluate(right);
-
-                            match right_value {
-                                Value::Boolean(v) => Value::Boolean(v),
-                                _ => panic!("Operator || requires boolean operands"),
-                            }
-                        }
+                        Value::Boolean(false) => match self.evaluate(right)? {
+                            Value::Boolean(v) => Value::Boolean(v),
+                            _ => panic!("Operator || requires boolean operands"),
+                        },
 
                         _ => panic!("Operator || requires boolean operands"),
                     },
 
                     _ => {
-                        let right_value = self.evaluate(right);
-
+                        let right_value = self.evaluate(right)?;
                         self.eval_binary(left_value, operator, right_value)
                     }
-                }
+                })
             }
-            // End Expr::Binary
+
+            // Function calls and struct construction
             Expr::Call { callee, arguments } => {
                 if let Expr::Identifier(name) = &**callee {
-                    if let Some(value) = self.call_builtin(name, arguments) {
-                        return value;
+                    if let Some(value) = self.call_builtin(name, arguments)? {
+                        return Ok(value);
                     }
                 }
 
-                let function = self.evaluate(callee);
+                let function = self.evaluate(callee)?;
 
-                match function {
+                Ok(match function {
                     Value::StructDefinition {
                         name,
                         fields,
@@ -528,7 +526,7 @@ impl Interpreter {
                         let mut local_env = Environment::with_parent(env);
 
                         for (param, arg) in params.iter().zip(arguments.iter()) {
-                            let value = self.evaluate(arg);
+                            let value = self.evaluate(arg)?;
                             local_env.define(param.clone(), value);
                         }
 
@@ -546,29 +544,31 @@ impl Interpreter {
                     _ => {
                         panic!("Can only call functions.");
                     }
-                }
+                })
             }
-            //
+
+            // Arrays
             Expr::Array { elements } => {
                 let mut values = Vec::new();
 
                 for element in elements {
-                    values.push(self.evaluate(element));
+                    values.push(self.evaluate(element)?);
                 }
 
-                Value::Array(Rc::new(RefCell::new(values)))
+                Ok(Value::Array(Rc::new(RefCell::new(values))))
             }
 
+            // Indexing
             Expr::Index { object, index } => {
-                let object = self.evaluate(object);
-                let index = self.evaluate(index);
+                let object = self.evaluate(object)?;
+                let index = self.evaluate(index)?;
 
-                match (object, index) {
+                Ok(match (object, index) {
                     (Value::Array(values), Value::Number(i)) => {
                         let i = i as usize;
-
                         values.borrow().get(i).cloned().unwrap_or(Value::Null)
                     }
+
                     (Value::Dictionary(map), Value::String(key)) => {
                         map.borrow().get(&key).cloned().unwrap_or(Value::Null)
                     }
@@ -576,14 +576,14 @@ impl Interpreter {
                     _ => {
                         panic!("Index operator can only be used on arrays or dictionaries.");
                     }
-                }
+                })
             }
-            // start Expr::Unary
-            Expr::Unary { operator, right } => {
-                let value = self.evaluate(right);
 
-                // start match
-                match operator.as_str() {
+            // Unary expressions
+            Expr::Unary { operator, right } => {
+                let value = self.evaluate(right)?;
+
+                Ok(match operator.as_str() {
                     "+" => match value {
                         Value::Number(n) => Value::Number(n),
                         _ => panic!("Unary '+' requires number"),
@@ -609,39 +609,33 @@ impl Interpreter {
 
                         Value::Boolean(result)
                     }
-                    // end match
+
                     _ => panic!("Unknown unary operator '{}'", operator),
-                }
+                })
             }
-            // End Expr::Unary
 
-            // Start Expr::Dictionary
+            // Dictionaries
             Expr::Dictionary { entries } => {
-                use std::cell::RefCell;
-                use std::collections::HashMap;
-                use std::rc::Rc;
-
                 let mut map = HashMap::new();
 
                 for (key_expr, value_expr) in entries {
-                    let key = match self.evaluate(key_expr) {
+                    let key = match self.evaluate(key_expr)? {
                         Value::String(s) => s,
                         _ => panic!("Dictionary key must be a string"),
                     };
 
-                    let value = self.evaluate(value_expr);
-
+                    let value = self.evaluate(value_expr)?;
                     map.insert(key, value);
                 }
 
-                Value::Dictionary(Rc::new(RefCell::new(map)))
-            } // End Expr::Dictionary
+                Ok(Value::Dictionary(Rc::new(RefCell::new(map))))
+            }
 
-            // Start Expr::Member
+            // Struct member access
             Expr::Member { object, field } => {
-                let value = self.evaluate(object);
+                let value = self.evaluate(object)?;
 
-                match value {
+                Ok(match value {
                     Value::StructInstance { name, fields } => {
                         let fields = fields.borrow();
 
@@ -663,280 +657,304 @@ impl Interpreter {
                             field
                         );
                     }
-                }
-            } // End Expr::Member
+                })
+            }
         }
     }
-    fn call_builtin(&mut self, name: &str, arguments: &[Expr]) -> Option<Value> {
+    // end fn evaluate
+
+    // start fn call_builtin
+    fn call_builtin(
+        &mut self,
+        name: &str,
+        arguments: &[Expr],
+    ) -> Result<Option<Value>, RuntimeSignal> {
         match name {
             "len" => {
                 if arguments.len() != 1 {
                     panic!("len() expects 1 argument");
                 }
 
-                let value = self.evaluate(&arguments[0]);
-
-                Some(array::len(value))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(array::len(value)))
             }
+
             "push" => {
                 if arguments.len() != 2 {
-                    panic!("push() expects 2 argument");
+                    panic!("push() expects 2 arguments");
                 }
 
-                let array = self.evaluate(&arguments[0]);
-                let value = self.evaluate(&arguments[1]);
+                let array_value = self.evaluate(&arguments[0])?;
+                let value = self.evaluate(&arguments[1])?;
 
-                Some(array::push(array, value))
+                Ok(Some(array::push(array_value, value)))
             }
+
             "pop" => {
                 if arguments.len() != 1 {
                     panic!("pop() expects 1 argument");
                 }
 
-                let array = self.evaluate(&arguments[0]);
-
-                Some(array::pop(array))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(array::pop(value)))
             }
+
             "insert" => {
                 if arguments.len() != 3 {
-                    panic!("insert() expects 3 argument");
+                    panic!("insert() expects 3 arguments");
                 }
 
-                let array = self.evaluate(&arguments[0]);
-                let index = self.evaluate(&arguments[1]);
-                let value = self.evaluate(&arguments[2]);
+                let array_value = self.evaluate(&arguments[0])?;
+                let index = self.evaluate(&arguments[1])?;
+                let value = self.evaluate(&arguments[2])?;
 
-                Some(array::insert(array, index, value))
+                Ok(Some(array::insert(array_value, index, value)))
             }
+
             "remove" => {
                 if arguments.len() != 2 {
-                    panic!("remove() expects 2 argument");
+                    panic!("remove() expects 2 arguments");
                 }
 
-                let array = self.evaluate(&arguments[0]);
-                let index = self.evaluate(&arguments[1]);
+                let array_value = self.evaluate(&arguments[0])?;
+                let index = self.evaluate(&arguments[1])?;
 
-                Some(array::remove(array, index))
+                Ok(Some(array::remove(array_value, index)))
             }
+
             "clear" => {
                 if arguments.len() != 1 {
                     panic!("clear() expects 1 argument");
                 }
 
-                let value = self.evaluate(&arguments[0]);
+                let value = self.evaluate(&arguments[0])?;
 
                 match &value {
-                    Value::Array(_) => Some(array::clear(value)),
-                    Value::Dictionary(_) => Some(dictionary::clear(value)),
+                    Value::Array(_) => Ok(Some(array::clear(value))),
+                    Value::Dictionary(_) => Ok(Some(dictionary::clear(value))),
                     _ => panic!("clear() expects an array or dictionary"),
                 }
             }
+
             "reverse" => {
                 if arguments.len() != 1 {
                     panic!("reverse() expects 1 argument");
                 }
 
-                let array = self.evaluate(&arguments[0]);
-
-                Some(array::reverse(array))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(array::reverse(value)))
             }
+
             "first" => {
                 if arguments.len() != 1 {
                     panic!("first() expects 1 argument");
                 }
 
-                let array = self.evaluate(&arguments[0]);
-
-                Some(array::first(array))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(array::first(value)))
             }
+
             "last" => {
                 if arguments.len() != 1 {
                     panic!("last() expects 1 argument");
                 }
 
-                let array = self.evaluate(&arguments[0]);
-
-                Some(array::last(array))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(array::last(value)))
             }
+
             "is_empty" => {
                 if arguments.len() != 1 {
                     panic!("is_empty() expects 1 argument");
                 }
 
-                let array = self.evaluate(&arguments[0]);
-
-                Some(array::is_empty(array))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(array::is_empty(value)))
             }
+
             "trim" => {
                 if arguments.len() != 1 {
                     panic!("trim() expects 1 argument");
                 }
 
-                let value = self.evaluate(&arguments[0]);
-
-                Some(string::trim(value))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(string::trim(value)))
             }
+
             "upper" => {
                 if arguments.len() != 1 {
                     panic!("upper() expects 1 argument");
                 }
 
-                let value = self.evaluate(&arguments[0]);
-
-                Some(string::upper(value))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(string::upper(value)))
             }
+
             "lower" => {
                 if arguments.len() != 1 {
                     panic!("lower() expects 1 argument");
                 }
 
-                let value = self.evaluate(&arguments[0]);
-
-                Some(string::lower(value))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(string::lower(value)))
             }
+
             "contains" => {
                 if arguments.len() != 2 {
-                    panic!("contains() expects 2 argument");
+                    panic!("contains() expects 2 arguments");
                 }
 
-                let target = self.evaluate(&arguments[0]);
-                let value = self.evaluate(&arguments[1]);
+                let target = self.evaluate(&arguments[0])?;
+                let value = self.evaluate(&arguments[1])?;
 
                 match &target {
-                    Value::Array(_) => Some(array::contains(target, value)),
-                    Value::String(_) => Some(string::contains(target, value)),
+                    Value::Array(_) => Ok(Some(array::contains(target, value))),
+                    Value::String(_) => Ok(Some(string::contains(target, value))),
                     _ => panic!("contains() only supports arrays or strings"),
                 }
             }
+
             "starts_with" => {
                 if arguments.len() != 2 {
-                    panic!("starts_with() expects 2 argument");
+                    panic!("starts_with() expects 2 arguments");
                 }
 
-                let text = self.evaluate(&arguments[0]);
-                let prefix = self.evaluate(&arguments[1]);
+                let text = self.evaluate(&arguments[0])?;
+                let prefix = self.evaluate(&arguments[1])?;
 
-                Some(string::starts_with(text, prefix))
+                Ok(Some(string::starts_with(text, prefix)))
             }
+
             "ends_with" => {
                 if arguments.len() != 2 {
-                    panic!("ends_with() expects 2 argument");
+                    panic!("ends_with() expects 2 arguments");
                 }
 
-                let text = self.evaluate(&arguments[0]);
-                let suffix = self.evaluate(&arguments[1]);
+                let text = self.evaluate(&arguments[0])?;
+                let suffix = self.evaluate(&arguments[1])?;
 
-                Some(string::ends_with(text, suffix))
+                Ok(Some(string::ends_with(text, suffix)))
             }
+
             "replace" => {
                 if arguments.len() != 3 {
-                    panic!("replace() expects 3 argument");
+                    panic!("replace() expects 3 arguments");
                 }
 
-                let text = self.evaluate(&arguments[0]);
-                let from = self.evaluate(&arguments[1]);
-                let to = self.evaluate(&arguments[2]);
+                let text = self.evaluate(&arguments[0])?;
+                let from = self.evaluate(&arguments[1])?;
+                let to = self.evaluate(&arguments[2])?;
 
-                Some(string::replace(text, from, to))
+                Ok(Some(string::replace(text, from, to)))
             }
+
             "split" => {
                 if arguments.len() != 2 {
-                    panic!("split() expects 2 argument");
+                    panic!("split() expects 2 arguments");
                 }
 
-                let text = self.evaluate(&arguments[0]);
-                let separator = self.evaluate(&arguments[1]);
+                let text = self.evaluate(&arguments[0])?;
+                let separator = self.evaluate(&arguments[1])?;
 
-                Some(string::split(text, separator))
+                Ok(Some(string::split(text, separator)))
             }
+
             "keys" => {
                 if arguments.len() != 1 {
-                    panic!("keys() requires 1 argument");
+                    panic!("keys() expects 1 argument");
                 }
 
-                let dictionary = self.evaluate(&arguments[0]);
-
-                Some(dictionary::keys(dictionary))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(dictionary::keys(value)))
             }
+
             "values" => {
                 if arguments.len() != 1 {
                     panic!("values() expects 1 argument");
                 }
 
-                let value = self.evaluate(&arguments[0]);
-
-                Some(dictionary::values(value))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(dictionary::values(value)))
             }
+
             "has_key" => {
                 if arguments.len() != 2 {
                     panic!("has_key() expects 2 arguments");
                 }
 
-                let dictionary = self.evaluate(&arguments[0]);
-                let key = self.evaluate(&arguments[1]);
+                let dictionary_value = self.evaluate(&arguments[0])?;
+                let key = self.evaluate(&arguments[1])?;
 
-                Some(dictionary::has_key(dictionary, key))
+                Ok(Some(dictionary::has_key(dictionary_value, key)))
             }
+
             "remove_key" => {
                 if arguments.len() != 2 {
                     panic!("remove_key() expects 2 arguments");
                 }
 
-                let dictionary = self.evaluate(&arguments[0]);
-                let key = self.evaluate(&arguments[1]);
+                let dictionary_value = self.evaluate(&arguments[0])?;
+                let key = self.evaluate(&arguments[1])?;
 
-                Some(dictionary::remove(dictionary, key))
+                Ok(Some(dictionary::remove(dictionary_value, key)))
             }
+
             "set" => {
                 if arguments.len() != 3 {
                     panic!("set() expects 3 arguments");
                 }
 
-                let dictionary = self.evaluate(&arguments[0]);
-                let key = self.evaluate(&arguments[1]);
-                let value = self.evaluate(&arguments[2]);
+                let dictionary_value = self.evaluate(&arguments[0])?;
+                let key = self.evaluate(&arguments[1])?;
+                let value = self.evaluate(&arguments[2])?;
 
-                Some(dictionary::set(dictionary, key, value))
+                Ok(Some(dictionary::set(dictionary_value, key, value)))
             }
+
             "get" => {
                 if arguments.len() != 2 && arguments.len() != 3 {
                     panic!("get() expects 2 or 3 arguments");
                 }
 
-                let dictionary = self.evaluate(&arguments[0]);
-                let key = self.evaluate(&arguments[1]);
+                let dictionary_value = self.evaluate(&arguments[0])?;
+                let key = self.evaluate(&arguments[1])?;
 
                 let default = if arguments.len() == 3 {
-                    Some(self.evaluate(&arguments[2]))
+                    Some(self.evaluate(&arguments[2])?)
                 } else {
                     None
                 };
 
-                Some(dictionary::get(dictionary, key, default))
+                Ok(Some(dictionary::get(dictionary_value, key, default)))
             }
+
             "merge" => {
                 if arguments.len() != 2 {
                     panic!("merge() expects 2 arguments");
                 }
 
-                let target = self.evaluate(&arguments[0]);
-                let source = self.evaluate(&arguments[1]);
+                let target = self.evaluate(&arguments[0])?;
+                let source = self.evaluate(&arguments[1])?;
 
-                Some(dictionary::merge(target, source))
+                Ok(Some(dictionary::merge(target, source)))
             }
+
             "clone" => {
                 if arguments.len() != 1 {
                     panic!("clone() expects 1 argument");
                 }
 
-                let dictionary = self.evaluate(&arguments[0]);
-
-                Some(dictionary::clone(dictionary))
+                let value = self.evaluate(&arguments[0])?;
+                Ok(Some(dictionary::clone(value)))
             }
-            //
-            _ => None,
+
+            _ => Ok(None),
         }
     }
+    // end fn call_builtin
+
+    // end edit
+
     // Start eval_binary(){}
     fn eval_binary(&self, left: Value, operator: &String, right: Value) -> Value {
         // Start match operator.as_str()

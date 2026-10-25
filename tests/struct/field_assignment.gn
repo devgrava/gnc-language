@@ -1,0 +1,12 @@
+struct User {
+    name;
+    age;
+}
+
+let user = User();
+
+user.name = "Didit";
+user.age = 20;
+
+print(user.name);
+print(user.age);

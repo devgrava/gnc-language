@@ -1,0 +1,9 @@
+struct User {
+    name;
+}
+
+let user = User();
+
+user.name = "Didit";
+
+print(user.name);

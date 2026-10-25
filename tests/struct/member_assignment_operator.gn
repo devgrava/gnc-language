@@ -1,0 +1,18 @@
+struct User {
+    age;
+}
+
+let user = User();
+
+user.age = 10;
+user.age += 5;
+print(user.age);
+
+user.age -= 2;
+print(user.age);
+
+user.age *= 2;
+print(user.age);
+
+user.age /= 2;
+print(user.age);

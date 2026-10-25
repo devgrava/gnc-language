@@ -1,0 +1,7 @@
+struct User {
+    name;
+}
+
+let user = User();
+
+print(user.email);

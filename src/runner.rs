@@ -39,27 +39,27 @@ pub fn run_source_with_path(
     let program = parser.parse_program();
 
     // Interpreter
-    if let Err(signal) = interpreter.run(&program) {
-        match signal {
-            crate::interpreter::signal::RuntimeSignal::Error(message) => {
-                eprintln!("Error: {}", message);
-            }
+    match interpreter.run(&program) {
+        Ok(()) => Ok(()),
 
-            crate::interpreter::signal::RuntimeSignal::Break => {
-                eprintln!("Error: Unexpected 'break'");
-            }
-
-            crate::interpreter::signal::RuntimeSignal::Continue => {
-                eprintln!("Error: Unexpected 'continue'");
-            }
-
-            crate::interpreter::signal::RuntimeSignal::Return(_) => {
-                eprintln!("Error: Unexpected 'return'");
-            }
+        Err(crate::interpreter::signal::RuntimeSignal::Error(message)) => {
+            eprintln!("Error: {}", message);
+            Ok(())
         }
 
-        std::process::exit(1);
+        Err(crate::interpreter::signal::RuntimeSignal::Break) => {
+            eprintln!("Error: Unexpected 'break'");
+            Ok(())
+        }
+
+        Err(crate::interpreter::signal::RuntimeSignal::Continue) => {
+            eprintln!("Error: Unexpected 'continue'");
+            Ok(())
+        }
+
+        Err(crate::interpreter::signal::RuntimeSignal::Return(_)) => {
+            eprintln!("Error: Unexpected 'return'");
+            Ok(())
+        }
     }
-    interpreter.run(&program)
-    // End Interpreter
 }
